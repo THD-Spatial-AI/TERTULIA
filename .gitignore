@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 .venv/
+venv/
 __pycache__/
 *.pyc
 *.pyo
@@ -44,6 +45,9 @@ logs/
 # Supabase local
 supabase/.branches/
 supabase/.temp/
+
+# MkDocs build output
+site/
 
 .agents
 .impeccable
