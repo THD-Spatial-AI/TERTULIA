@@ -1,0 +1,31 @@
+# Workshop Logic Platform — Backend Dependencies
+# Python 3.11+
+
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+
+# Data validation
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# Supabase (database + auth + realtime admin)
+supabase==2.15.0
+
+# HTTP client (calls to feeedback_pipeline)
+httpx==0.28.1
+
+# Environment variables
+python-dotenv==1.0.1
+
+# NOTE: facilitator JWTs are validated via supabase.auth.get_user(); no local
+# JWT library is used. python-jose was removed — it was unused and pinned to a
+# version with known CVEs (CVE-2024-33663, CVE-2024-33664).
+
+# QR code generation (server-side, for session URLs)
+qrcode==8.0
+pillow==11.0.0
+
+# Development only
+pytest==8.3.4
+pytest-asyncio==0.25.0

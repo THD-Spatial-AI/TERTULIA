@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.production
+frontend/.env.local
+backend/.env
+
+# Vite
+frontend/.vite/
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+coverage/
+.vitest/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
+.agents
+.impeccable
+.claude
+CLAUDE.md
+IDEA.md
+ROADMAP.md
