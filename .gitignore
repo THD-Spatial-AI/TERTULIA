@@ -1,8 +1,57 @@
-# Add files and directories to ignore in Git
-# You can find some language specific templates at https://github.com/github/gitignore
-
-site/
+# Dependencies
+node_modules/
 .venv/
-__pycache__/
 venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.production
+frontend/.env.local
+backend/.env
+
+# Vite
+frontend/.vite/
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+coverage/
+.vitest/
+
+# IDEs
 .vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
+# MkDocs build output
+site/
+
+.agents
+.impeccable
+.claude
+CLAUDE.md
+IDEA.md
+ROADMAP.md

@@ -1,0 +1,177 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300..700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+/* ── Design tokens ─────────────────────────────────────────────────────────── */
+@theme {
+  --font-sans:  'Outfit', ui-sans-serif, sans-serif, system-ui;
+  --font-mono:  'JetBrains Mono', ui-monospace, monospace;
+  --font-serif: 'Merriweather', ui-serif, serif;
+
+  /* Orange brand ramp (hue 42°, primary ≈ #d87943) */
+  --color-brand-50:  oklch(0.972 0.018 52);
+  --color-brand-100: oklch(0.946 0.044 50);
+  --color-brand-200: oklch(0.902 0.092 48);
+  --color-brand-300: oklch(0.822 0.140 46);
+  --color-brand-400: oklch(0.722 0.162 44);
+  --color-brand-500: oklch(0.658 0.168 43);
+  --color-brand-600: oklch(0.612 0.168 42);   /* primary action ≈ #d87943 */
+  --color-brand-700: oklch(0.522 0.158 40);   /* primary hover */
+  --color-brand-800: oklch(0.402 0.122 38);
+  --color-brand-900: oklch(0.268 0.082 36);
+  --color-brand-950: oklch(0.172 0.052 34);   /* dark panel bg */
+
+  /* Fire accent (hue 32°, deeper orange-red — emphasis / wildfire actions) */
+  --color-fire-50:  oklch(0.974 0.020 46);
+  --color-fire-100: oklch(0.948 0.052 44);
+  --color-fire-200: oklch(0.908 0.098 42);
+  --color-fire-400: oklch(0.722 0.170 38);
+  --color-fire-500: oklch(0.638 0.190 35);
+  --color-fire-600: oklch(0.565 0.195 32);    /* accent action */
+  --color-fire-700: oklch(0.480 0.185 30);    /* accent hover */
+
+  /* Teal secondary (hue 190°, ≈ #527575 light / #5f8787 dark) */
+  --color-teal-100: oklch(0.942 0.028 192);
+  --color-teal-300: oklch(0.758 0.060 192);
+  --color-teal-400: oklch(0.592 0.055 192);
+  --color-teal-500: oklch(0.528 0.050 190);   /* ≈ #527575 */
+  --color-teal-600: oklch(0.470 0.044 188);
+  --color-teal-700: oklch(0.402 0.038 186);
+
+  /* Ink / text */
+  --color-ink:        oklch(0.118 0.006 264);
+  --color-ink-muted:  oklch(0.555 0.006 264);
+  --color-ink-subtle: oklch(0.650 0.004 264);
+
+  /* Surfaces */
+  --color-surface:       oklch(1.000 0.000 0);
+  --color-surface-faint: oklch(0.984 0.002 70);
+  --color-surface-1:     oklch(0.970 0.003 70);
+  --color-surface-2:     oklch(0.955 0.005 70);
+
+  /* Borders */
+  --color-border:        oklch(0.921 0.004 70);
+  --color-border-strong: oklch(0.852 0.008 70);
+
+  /* Semantic states */
+  --color-success:    oklch(0.520 0.152 145);
+  --color-success-bg: oklch(0.940 0.040 145);
+  --color-error:      oklch(0.510 0.188 22);
+  --color-error-bg:   oklch(0.950 0.038 22);
+  --color-warning:    oklch(0.720 0.162 85);
+  --color-warning-bg: oklch(0.960 0.048 85);
+
+  /* Focus ring */
+  --color-ring: oklch(0.612 0.168 42);
+
+  /* Radius */
+  --radius-sm:  0.375rem;
+  --radius-md:  0.5rem;
+  --radius-lg:  0.75rem;
+  --radius-xl:  1rem;
+  --radius-2xl: 1.5rem;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px 0 oklch(0.12 0.010 40 / 0.06);
+  --shadow-sm: 0 1px 3px 0 oklch(0.12 0.010 40 / 0.08), 0 1px 2px -1px oklch(0.12 0.010 40 / 0.08);
+  --shadow-md: 0 4px 6px -1px oklch(0.12 0.010 40 / 0.07), 0 2px 4px -2px oklch(0.12 0.010 40 / 0.07);
+  --shadow-lg: 0 10px 15px -3px oklch(0.12 0.010 40 / 0.08), 0 4px 6px -4px oklch(0.12 0.010 40 / 0.05);
+}
+
+/* ── Global base ───────────────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    border-color: theme(colors.border);
+  }
+
+  html {
+    color-scheme: light;   /* force light native controls regardless of OS dark mode */
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: theme(colors.surface);
+    color: theme(colors.ink);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  :focus-visible {
+    outline: 2px solid theme(colors.brand.600);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  ::selection {
+    background-color: theme(colors.brand.100);
+    color: theme(colors.brand.900);
+  }
+
+  ::placeholder {
+    color: theme(colors.ink.subtle);
+  }
+}
+
+/* ── Reaction animations ────────────────────────────────────────────────────── */
+@keyframes reaction-enter {
+  from   { opacity: 0; transform: translateX(120%) scale(0.7); }
+  65%    { transform: translateX(-6px) scale(1.04); }
+  to     { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes reaction-exit {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to   { opacity: 0; transform: translateX(110%) scale(0.85); }
+}
+
+@keyframes float-up {
+  0%   { opacity: 0; transform: translateY(0)      scale(0.3)  rotate(-8deg); }
+  10%  { opacity: 1; transform: translateY(-22px)  scale(1.25) rotate(4deg);  }
+  22%  {             transform: translateY(-48px)  scale(1)    rotate(-2deg); }
+  45%  {             transform: translateY(-110px) scale(1.02) rotate(3deg);  }
+  80%  { opacity: 1; transform: translateY(-170px) scale(0.96) rotate(-1deg); }
+  100% { opacity: 0; transform: translateY(-230px) scale(0.7)  rotate(5deg);  }
+}
+
+@keyframes reaction-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(0.88); }
+  70%  { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
+/* ── Reduced motion ────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  /* Disable purely decorative looping animations */
+  .animate-ping,
+  .animate-bounce,
+  .animate-pulse {
+    animation: none !important;
+  }
+
+  /* Replace spatial keyframes with opacity-only versions so elements stay visible */
+  @keyframes float-up {
+    from { opacity: 0; transform: scale(0.75); }
+    15%  { opacity: 1; transform: scale(1); }
+    78%  { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(0.75); }
+  }
+
+  @keyframes reaction-enter {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes reaction-exit {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
+  @keyframes reaction-pop {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+  }
+}
