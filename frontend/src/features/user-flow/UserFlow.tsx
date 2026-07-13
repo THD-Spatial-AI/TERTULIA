@@ -24,6 +24,7 @@ import { WorkshopProgress } from '@/components/ui/WorkshopProgress'
 import { CompletedScreen } from '@/components/ui/CompletedScreen'
 import { t } from '@/lib/i18n'
 import { participantFetch } from '@/lib/api'
+import { BACKEND_URL } from '@/lib/config'
 import { useWorkshopChannel } from '@/lib/useWorkshopChannel'
 import { ChipPalette } from './ChipPalette'
 import { StartNode } from './nodes/StartNode'
@@ -200,7 +201,7 @@ export function UserFlow() {
 
   useEffect(() => {
     if (!slug) return
-    fetch(`/api/v1/sessions/${slug}`)
+    fetch(`${BACKEND_URL}/api/v1/sessions/${slug}`)
       .then(r => r.ok ? r.json() : null)
       .then((s: Session | null) => { if (s) setChips(s.user_flow_chips ?? []) })
       .catch(() => {})

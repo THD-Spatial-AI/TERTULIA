@@ -1,9 +1,9 @@
 import { supabase } from './supabase'
 import { getStoredSessionToken } from './utils'
 
-// In dev, VITE_BACKEND_URL is unset so BASE is '' and Vite's proxy handles /api/v1/...
-// In production (Vercel), VITE_BACKEND_URL points to the deployed backend
-const BASE = (import.meta.env.VITE_BACKEND_URL as string | undefined) ?? ''
+import { BACKEND_URL } from './config'
+
+const BASE = BACKEND_URL
 
 async function authHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession()

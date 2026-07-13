@@ -8,6 +8,7 @@ import { t } from '@/lib/i18n'
 import { supabase } from '@/lib/supabase'
 import { useWorkshopChannel } from '@/lib/useWorkshopChannel'
 import { getStoredParticipant } from '@/lib/utils'
+import { BACKEND_URL } from '@/lib/config'
 import type { ReactionKind } from '@/types'
 
 function toEmbedUrl(url: string): string {
@@ -39,7 +40,7 @@ export function SlidesView() {
 
   useEffect(() => {
     if (!slug) return
-    fetch(`/api/v1/sessions/${slug}`)
+    fetch(`${BACKEND_URL}/api/v1/sessions/${slug}`)
       .then(r => r.ok ? r.json() : null)
       .then(s => { if (s?.slides_url) setSlidesUrl(s.slides_url) })
       .catch(() => {})

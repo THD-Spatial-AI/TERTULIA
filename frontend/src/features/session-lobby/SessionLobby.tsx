@@ -11,8 +11,7 @@ import {
 import { partnerOrbitIcons } from '@/components/ui/partner-orbit'
 import { t } from '@/lib/i18n'
 import { storeSessionToken, storeParticipant } from '@/lib/utils'
-
-const API = ''
+import { BACKEND_URL } from '@/lib/config'
 
 export function SessionLobby() {
   const { slug } = useParams<{ slug: string }>()
@@ -27,7 +26,7 @@ export function SessionLobby() {
     if (!name.trim() || !role.trim()) return
     setLoading(true)
     try {
-      const res = await fetch(`${API}/api/v1/participants/join`, {
+      const res = await fetch(`${BACKEND_URL}/api/v1/participants/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

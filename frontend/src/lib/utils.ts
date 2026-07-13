@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { BACKEND_URL } from './config'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -31,7 +32,7 @@ export function safeExternalUrl(url: string | null | undefined): string | null {
  * channel, so a spoofed `launch` event must not be able to choose the URL.
  */
 export async function redirectToWildfire(slug: string): Promise<void> {
-  const res = await fetch(`/api/v1/sessions/${slug}`)
+  const res = await fetch(`${BACKEND_URL}/api/v1/sessions/${slug}`)
   if (!res.ok) return
   const session = await res.json().catch(() => null)
   if (session?.phase !== 'launched') return

@@ -20,6 +20,7 @@ import { WorkshopProgress } from '@/components/ui/WorkshopProgress'
 import { CompletedScreen } from '@/components/ui/CompletedScreen'
 import { t } from '@/lib/i18n'
 import { participantFetch } from '@/lib/api'
+import { BACKEND_URL } from '@/lib/config'
 import { useWorkshopChannel } from '@/lib/useWorkshopChannel'
 import { RingBackground } from './RingBackground'
 import { StakeholderNode } from './StakeholderNode'
@@ -122,7 +123,7 @@ function StakeholderMapInner({ slug, broadcastMessage, dismissBroadcast }: Inner
   // Pre-seed the sidebar with stakeholder suggestions configured by the facilitator
   useEffect(() => {
     if (!slug) return
-    fetch(`/api/v1/sessions/${slug}`)
+    fetch(`${BACKEND_URL}/api/v1/sessions/${slug}`)
       .then(r => r.ok ? r.json() : null)
       .then((s: { stakeholder_suggestions?: string[] } | null) => {
         if (s?.stakeholder_suggestions?.length) {
