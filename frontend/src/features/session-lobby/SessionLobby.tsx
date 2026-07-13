@@ -1,14 +1,88 @@
-import { useState } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { Flame, Users, Map, MessageSquareText, Trees, Network, Workflow, Compass } from 'lucide-react'
 import { NavBar } from '@/components/layout/NavBar'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
+import {
+  AnimatedForm,
+  Ripple,
+  TechOrbitDisplay,
+  type Field,
+  type IconConfig,
+} from '@/components/ui/modern-animated-sign-in'
 import { t } from '@/lib/i18n'
 import { storeSessionToken, storeParticipant } from '@/lib/utils'
 
 const API = ''
+
+const orbitIcons: IconConfig[] = [
+  {
+    component: () => <Flame className="size-[30px] text-fire-500" aria-hidden="true" />,
+    className: 'size-[30px] border-none bg-transparent',
+    duration: 20,
+    delay: 20,
+    radius: 100,
+    path: false,
+  },
+  {
+    component: () => <Users className="size-[30px] text-brand-600" aria-hidden="true" />,
+    className: 'size-[30px] border-none bg-transparent',
+    duration: 20,
+    delay: 10,
+    radius: 100,
+    path: false,
+  },
+  {
+    component: () => <Map className="size-[38px] text-teal-500" aria-hidden="true" />,
+    className: 'size-[38px] border-none bg-transparent',
+    radius: 160,
+    duration: 20,
+    path: false,
+  },
+  {
+    component: () => <Workflow className="size-[38px] text-brand-500" aria-hidden="true" />,
+    className: 'size-[38px] border-none bg-transparent',
+    radius: 160,
+    duration: 20,
+    delay: 20,
+    path: false,
+  },
+  {
+    component: () => <MessageSquareText className="size-[34px] text-brand-700" aria-hidden="true" />,
+    className: 'size-[34px] border-none bg-transparent',
+    duration: 20,
+    delay: 20,
+    radius: 220,
+    path: false,
+    reverse: true,
+  },
+  {
+    component: () => <Trees className="size-[34px] text-teal-600" aria-hidden="true" />,
+    className: 'size-[34px] border-none bg-transparent',
+    duration: 20,
+    delay: 10,
+    radius: 220,
+    path: false,
+    reverse: true,
+  },
+  {
+    component: () => <Network className="size-[42px] text-brand-400" aria-hidden="true" />,
+    className: 'size-[42px] border-none bg-transparent',
+    radius: 280,
+    duration: 20,
+    path: false,
+    reverse: true,
+  },
+  {
+    component: () => <Compass className="size-[42px] text-fire-600" aria-hidden="true" />,
+    className: 'size-[42px] border-none bg-transparent',
+    radius: 280,
+    duration: 20,
+    delay: 60,
+    path: false,
+    reverse: true,
+  },
+]
 
 export function SessionLobby() {
   const { slug } = useParams<{ slug: string }>()
@@ -18,7 +92,7 @@ export function SessionLobby() {
   const [org, setOrg] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleJoin(e: React.FormEvent) {
+  async function handleJoin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!name.trim() || !role.trim()) return
     setLoading(true)
@@ -49,134 +123,67 @@ export function SessionLobby() {
     }
   }
 
+  const fields: Field[] = [
+    {
+      label: t('session_lobby.name_label'),
+      required: true,
+      type: 'text',
+      placeholder: t('session_lobby.name_placeholder'),
+      autoComplete: 'given-name',
+      requiredError: t('facilitator.required_field'),
+      onChange: (e: ChangeEvent<HTMLInputElement>) => setName(e.target.value),
+    },
+    {
+      label: t('session_lobby.role_label'),
+      required: true,
+      type: 'text',
+      placeholder: t('session_lobby.role_placeholder'),
+      autoComplete: 'organization-title',
+      requiredError: t('facilitator.required_field'),
+      onChange: (e: ChangeEvent<HTMLInputElement>) => setRole(e.target.value),
+    },
+    {
+      label: t('session_lobby.org_label'),
+      type: 'text',
+      placeholder: t('session_lobby.org_placeholder'),
+      autoComplete: 'organization',
+      onChange: (e: ChangeEvent<HTMLInputElement>) => setOrg(e.target.value),
+    },
+  ]
+
   return (
-    <div className="flex min-h-screen flex-col bg-brand-950">
+    <div className="flex min-h-screen flex-col bg-surface">
       <NavBar />
 
-      {/* Split-screen body */}
-      <div className="flex flex-1 flex-col lg:flex-row">
+      <section className="flex flex-1 max-lg:justify-center">
+        {/* Left — orbiting workshop icons */}
+        <span className="relative flex flex-col justify-center w-1/2 max-lg:hidden">
+          <Ripple mainCircleSize={100} className="max-w-full" />
+          <TechOrbitDisplay iconsArray={orbitIcons} text="Tertulia" />
 
-        {/* Left — dark hero panel */}
-        <div className="relative flex flex-col justify-between overflow-hidden px-8 py-12 lg:w-[44%] lg:px-12 lg:py-16">
-          {/* Decorative grid lines */}
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage: `
-                linear-gradient(oklch(1 0 0) 1px, transparent 1px),
-                linear-gradient(90deg, oklch(1 0 0) 1px, transparent 1px)
-              `,
-              backgroundSize: '48px 48px',
-            }}
-            aria-hidden="true"
-          />
-          {/* Accent glow */}
-          <div
-            className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl"
-            style={{ background: 'oklch(0.480 0.178 290 / 0.18)' }}
-            aria-hidden="true"
-          />
-
-          {/* Workshop identity */}
-          <div className="relative">
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-brand-700/60 bg-brand-900/60 px-3 py-1.5 text-xs font-medium text-brand-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-fire-500 animate-pulse" aria-hidden="true" />
-              Live session
-            </div>
-
-            <h1 className="text-3xl font-bold tracking-tight text-white lg:text-4xl" style={{ textWrap: 'balance' }}>
-              {t('session_lobby.hero_heading')}
-            </h1>
-            <p className="mt-4 text-base text-brand-400 leading-relaxed" style={{ textWrap: 'pretty' }}>
-              {t('session_lobby.hero_body')}
-            </p>
-
-            {/* Feature pills */}
-            <ul className="mt-8 space-y-3" aria-label="Session features">
-              {[
-                { icon: '◈', text: t('session_lobby.feature_persona') },
-                { icon: '⟶', text: t('session_lobby.feature_flow') },
-                { icon: '◉', text: t('session_lobby.feature_launch') },
-              ].map(({ icon, text }) => (
-                <li key={text} className="flex items-center gap-3 text-sm text-brand-300">
-                  <span className="font-mono text-brand-500 w-4 text-center" aria-hidden="true">{icon}</span>
-                  {text}
-                </li>
-              ))}
-            </ul>
+          {/* Session tag */}
+          <div className="absolute bottom-8 left-12">
+            <p className="text-xs font-mono text-ink-subtle uppercase tracking-widest">session</p>
+            <p className="mt-1 font-mono text-sm text-ink-muted truncate">{slug ?? '—'}</p>
           </div>
-
-          {/* Bottom session tag */}
-          <div className="relative mt-12">
-            <p className="text-xs font-mono text-brand-600 uppercase tracking-widest">
-              session
-            </p>
-            <p className="mt-1 font-mono text-sm text-brand-400 truncate">
-              {slug ?? '—'}
-            </p>
-          </div>
-        </div>
+        </span>
 
         {/* Right — join form */}
-        <div className="flex flex-1 items-center justify-center bg-surface px-8 py-12 lg:px-16">
-          <div className="w-full max-w-sm">
-            <h2 className="text-xl font-semibold text-ink">
-              {t('session_lobby.form_heading')}
-            </h2>
-            <p className="mt-1 text-sm text-ink-muted">
-              {t('session_lobby.form_subheading')}
-            </p>
+        <span className="w-1/2 flex flex-col justify-center items-center max-lg:w-full max-lg:px-[10%] py-12">
+          <AnimatedForm
+            header={t('session_lobby.form_heading')}
+            subHeader={t('session_lobby.form_subheading')}
+            fields={fields}
+            submitButton={t('session_lobby.join_button')}
+            isLoading={loading}
+            onSubmit={handleJoin}
+          />
 
-            <form onSubmit={handleJoin} className="mt-8 space-y-5">
-              <div className="space-y-1.5">
-                <Label htmlFor="name">{t('session_lobby.name_label')}</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder={t('session_lobby.name_placeholder')}
-                  autoComplete="given-name"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="role">{t('session_lobby.role_label')}</Label>
-                <Input
-                  id="role"
-                  value={role}
-                  onChange={e => setRole(e.target.value)}
-                  placeholder={t('session_lobby.role_placeholder')}
-                  autoComplete="organization-title"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="org">
-                  {t('session_lobby.org_label')}
-                  <span className="ml-1 text-xs text-ink-subtle font-normal">({t('common.optional')})</span>
-                </Label>
-                <Input
-                  id="org"
-                  value={org}
-                  onChange={e => setOrg(e.target.value)}
-                  placeholder={t('session_lobby.org_placeholder')}
-                  autoComplete="organization"
-                />
-              </div>
-
-              <Button type="submit" className="w-full" size="lg" loading={loading}>
-                {t('session_lobby.join_button')}
-              </Button>
-            </form>
-
-            <p className="mt-6 text-center text-xs text-ink-subtle">
-              {t('session_lobby.privacy_note')}
-            </p>
-          </div>
-        </div>
-      </div>
+          <p className="mt-6 max-w-sm text-center text-xs text-ink-subtle">
+            {t('session_lobby.privacy_note')}
+          </p>
+        </span>
+      </section>
     </div>
   )
 }
