@@ -315,7 +315,10 @@ type Field = {
   placeholder?: string
   autoComplete?: string
   requiredError?: string
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void
+  /** Label of another field whose value this field must match (e.g. repeat password). */
+  matchWith?: string
+  matchError?: string
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void
 }
 
 type AnimatedFormProps = {
@@ -375,6 +378,10 @@ const AnimatedForm = memo(function AnimatedForm({
 
       if (field.type === 'password' && value && value.length < 6) {
         currentErrors[field.label] = 'Password must be at least 6 characters long'
+      }
+
+      if (field.matchWith && value !== (event.target as HTMLFormElement)[field.matchWith]?.value) {
+        currentErrors[field.label] = field.matchError ?? 'Fields do not match'
       }
     })
     return currentErrors

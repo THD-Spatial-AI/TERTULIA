@@ -1,88 +1,18 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Flame, Users, Map, MessageSquareText, Trees, Network, Workflow, Compass } from 'lucide-react'
 import { NavBar } from '@/components/layout/NavBar'
 import {
   AnimatedForm,
   Ripple,
   TechOrbitDisplay,
   type Field,
-  type IconConfig,
 } from '@/components/ui/modern-animated-sign-in'
+import { partnerOrbitIcons } from '@/components/ui/partner-orbit'
 import { t } from '@/lib/i18n'
 import { storeSessionToken, storeParticipant } from '@/lib/utils'
 
 const API = ''
-
-const orbitIcons: IconConfig[] = [
-  {
-    component: () => <Flame className="size-[30px] text-fire-500" aria-hidden="true" />,
-    className: 'size-[30px] border-none bg-transparent',
-    duration: 20,
-    delay: 20,
-    radius: 100,
-    path: false,
-  },
-  {
-    component: () => <Users className="size-[30px] text-brand-600" aria-hidden="true" />,
-    className: 'size-[30px] border-none bg-transparent',
-    duration: 20,
-    delay: 10,
-    radius: 100,
-    path: false,
-  },
-  {
-    component: () => <Map className="size-[38px] text-teal-500" aria-hidden="true" />,
-    className: 'size-[38px] border-none bg-transparent',
-    radius: 160,
-    duration: 20,
-    path: false,
-  },
-  {
-    component: () => <Workflow className="size-[38px] text-brand-500" aria-hidden="true" />,
-    className: 'size-[38px] border-none bg-transparent',
-    radius: 160,
-    duration: 20,
-    delay: 20,
-    path: false,
-  },
-  {
-    component: () => <MessageSquareText className="size-[34px] text-brand-700" aria-hidden="true" />,
-    className: 'size-[34px] border-none bg-transparent',
-    duration: 20,
-    delay: 20,
-    radius: 220,
-    path: false,
-    reverse: true,
-  },
-  {
-    component: () => <Trees className="size-[34px] text-teal-600" aria-hidden="true" />,
-    className: 'size-[34px] border-none bg-transparent',
-    duration: 20,
-    delay: 10,
-    radius: 220,
-    path: false,
-    reverse: true,
-  },
-  {
-    component: () => <Network className="size-[42px] text-brand-400" aria-hidden="true" />,
-    className: 'size-[42px] border-none bg-transparent',
-    radius: 280,
-    duration: 20,
-    path: false,
-    reverse: true,
-  },
-  {
-    component: () => <Compass className="size-[42px] text-fire-600" aria-hidden="true" />,
-    className: 'size-[42px] border-none bg-transparent',
-    radius: 280,
-    duration: 20,
-    delay: 60,
-    path: false,
-    reverse: true,
-  },
-]
 
 export function SessionLobby() {
   const { slug } = useParams<{ slug: string }>()
@@ -159,7 +89,7 @@ export function SessionLobby() {
         {/* Left — orbiting workshop icons */}
         <span className="relative flex flex-col justify-center w-1/2 max-lg:hidden">
           <Ripple mainCircleSize={100} className="max-w-full" />
-          <TechOrbitDisplay iconsArray={orbitIcons} text="Tertulia" />
+          <TechOrbitDisplay iconsArray={partnerOrbitIcons} text="Tertulia" />
 
           {/* Session tag */}
           <div className="absolute bottom-8 left-12">

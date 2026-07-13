@@ -23,7 +23,7 @@ const translations = {
       go_home: 'Zur Startseite',
     },
     nav: {
-      platform_title: 'Workshop Platform',
+      platform_title: 'TERTULIA',
       language_label: 'Sprache',
       sign_out: 'Abmelden',
       dashboard: 'Dashboard',
@@ -374,7 +374,7 @@ const translations = {
       go_home: 'Go home',
     },
     nav: {
-      platform_title: 'Workshop Platform',
+      platform_title: 'TERTULIA',
       language_label: 'Language',
       sign_out: 'Sign out',
       dashboard: 'Dashboard',

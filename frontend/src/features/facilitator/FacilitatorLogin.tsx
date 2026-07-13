@@ -1,9 +1,14 @@
-import { useState } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { NavBar } from '@/components/layout/NavBar'
-import { Button } from '@/components/ui/Button'
-import { Label } from '@/components/ui/Label'
+import {
+  AnimatedForm,
+  Ripple,
+  TechOrbitDisplay,
+  type Field,
+} from '@/components/ui/modern-animated-sign-in'
+import { partnerOrbitIcons } from '@/components/ui/partner-orbit'
 import { t } from '@/lib/i18n'
 import { supabase } from '@/lib/supabase'
 
@@ -16,7 +21,7 @@ export function FacilitatorLogin() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!email.trim() || !password.trim()) return
     setLoading(true)
@@ -38,73 +43,72 @@ export function FacilitatorLogin() {
     }
   }
 
-  const darkInput = 'flex h-10 w-full rounded-lg border border-brand-700 bg-brand-800/60 px-3.5 py-2 text-sm text-white placeholder:text-brand-600 transition-colors hover:border-brand-600 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20'
+  const fields: Field[] = [
+    {
+      label: t('facilitator.email_label'),
+      required: true,
+      type: 'email',
+      placeholder: t('facilitator.email_placeholder'),
+      autoComplete: 'email',
+      requiredError: t('facilitator.required_field'),
+      onChange: (e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value),
+    },
+    {
+      label: 'Password',
+      required: true,
+      type: 'password',
+      placeholder: '••••••••',
+      autoComplete: mode === 'login' ? 'current-password' : 'new-password',
+      requiredError: t('facilitator.required_field'),
+      onChange: (e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value),
+    },
+    ...(mode === 'signup'
+      ? [
+          {
+            label: 'Repeat password',
+            required: true,
+            type: 'password',
+            placeholder: '••••••••',
+            autoComplete: 'new-password',
+            requiredError: t('facilitator.required_field'),
+            matchWith: 'Password',
+            matchError: 'Passwords do not match',
+          } satisfies Field,
+        ]
+      : []),
+  ]
 
   return (
-    <div className="flex min-h-screen flex-col bg-brand-950">
+    <div className="flex min-h-screen flex-col bg-surface">
       <NavBar />
-      <div className="flex flex-1 items-center justify-center px-6 py-16">
-        <div className="w-full max-w-sm">
-          <div className="rounded-2xl border border-brand-800 bg-brand-900/60 p-8">
-            <div className="mb-6">
-              <h1 className="text-xl font-semibold text-white">
-                {mode === 'login' ? t('facilitator.login_title') : 'Create account'}
-              </h1>
-              <p className="mt-1.5 text-sm text-brand-400">
-                {mode === 'login'
-                  ? 'Sign in to manage your workshop sessions.'
-                  : 'Create a facilitator account to get started.'}
-              </p>
-            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-brand-300">{t('facilitator.email_label')}</Label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder={t('facilitator.email_placeholder')}
-                  autoComplete="email"
-                  required
-                  className={darkInput}
-                />
-              </div>
+      <section className="flex flex-1 max-lg:justify-center">
+        {/* Left — orbiting partner logos */}
+        <span className="relative flex flex-col justify-center w-1/2 max-lg:hidden">
+          <Ripple mainCircleSize={100} className="max-w-full" />
+          <TechOrbitDisplay iconsArray={partnerOrbitIcons} text="Tertulia" />
+        </span>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="password" className="text-brand-300">Password</Label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                  minLength={6}
-                  required
-                  className={darkInput}
-                />
-              </div>
-
-              <Button type="submit" className="w-full" size="lg" loading={loading}>
-                {mode === 'login' ? 'Sign in' : 'Create account'}
-              </Button>
-            </form>
-
-            <p className="mt-5 text-center text-sm text-brand-500">
-              {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-              <button
-                type="button"
-                onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                className="text-brand-300 underline underline-offset-2 hover:text-white transition-colors"
-              >
-                {mode === 'login' ? 'Sign up' : 'Sign in'}
-              </button>
-            </p>
-          </div>
-        </div>
-      </div>
+        {/* Right — login / signup form */}
+        <span className="w-1/2 flex flex-col justify-center items-center max-lg:w-full max-lg:px-[10%] py-12">
+          <AnimatedForm
+            header={mode === 'login' ? t('facilitator.login_title') : 'Create account'}
+            subHeader={
+              mode === 'login'
+                ? 'Sign in to manage your workshop sessions.'
+                : 'Create a facilitator account to get started.'
+            }
+            fields={fields}
+            submitButton={mode === 'login' ? 'Sign in' : 'Create account'}
+            textVariantButton={
+              mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'
+            }
+            goTo={() => setMode(mode === 'login' ? 'signup' : 'login')}
+            isLoading={loading}
+            onSubmit={handleSubmit}
+          />
+        </span>
+      </section>
     </div>
   )
 }
