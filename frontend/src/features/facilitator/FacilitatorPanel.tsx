@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { QRCodeSVG } from 'qrcode.react'
@@ -11,8 +11,9 @@ import { ReactionFeed } from '@/components/ui/ReactionFeed'
 import { cn } from '@/lib/utils'
 import { t } from '@/lib/i18n'
 import { apiFetch } from '@/lib/api'
-import { supabase } from '@/lib/supabase'
-import type { Session, Participant, SessionPhase, ControlMessage, ParticipantCompletion } from '@/types'
+import { getMe } from '@/lib/auth'
+import { useWorkshopChannel } from '@/lib/useWorkshopChannel'
+import type { Session, Participant, SessionPhase, ParticipantCompletion } from '@/types'
 
 const PHASE_ORDER: SessionPhase[] = [
   'lobby', 'slides', 'template_1', 'template_2', 'template_3', 'template_4', 'launched',
@@ -126,7 +127,6 @@ export function FacilitatorPanel() {
   const [phaseElapsed, setPhaseElapsed] = useState(0)
   const [userEmail, setUserEmail] = useState<string>()
 
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const reactionIdRef = useRef(0)
   const phaseStartRef = useRef<number>(Date.now())
 
@@ -147,10 +147,16 @@ export function FacilitatorPanel() {
   }, [])
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUserEmail(data.session?.user.email)
-    })
+    getMe().then((me) => { if (me?.email) setUserEmail(me.email) })
   }, [])
+
+  const handleReaction = useCallback(({ kind, name }: { kind: string; name: string }) => {
+    const id = ++reactionIdRef.current
+    setReactions(prev => [...prev.slice(-19), { id, kind, name }])
+    setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 5000)
+  }, [])
+
+  useWorkshopChannel(session?.slug, { passive: true, onReaction: handleReaction })
 
   useEffect(() => {
     if (!sessionId) return
@@ -197,21 +203,6 @@ export function FacilitatorPanel() {
     return () => clearInterval(interval)
   }, [])
 
-  useEffect(() => {
-    if (!session) return
-    if (channelRef.current) supabase.removeChannel(channelRef.current)
-
-    const ch = supabase.channel(`session-control-${session.slug}`)
-    ch.on('broadcast', { event: 'reaction' }, ({ payload }: { payload: { kind: string; name: string } }) => {
-      const id = ++reactionIdRef.current
-      setReactions(prev => [...prev.slice(-19), { id, kind: payload.kind, name: payload.name }])
-      setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 5000)
-    })
-    ch.subscribe()
-    channelRef.current = ch
-
-    return () => { supabase.removeChannel(ch); channelRef.current = null }
-  }, [session])
 
   async function advancePhase() {
     if (!session) return
@@ -227,22 +218,12 @@ export function FacilitatorPanel() {
         toast.success(t('facilitator.launch_success').replace('{{count}}', String(result.launched)))
         if (result.warning) toast.warning(t('facilitator.launch_warning').replace('{{message}}', result.warning))
         setSession(s => s ? { ...s, phase: 'launched' } : s)
-        channelRef.current?.send({
-          type: 'broadcast',
-          event: 'control',
-          payload: { type: 'launch', wildfire_url: session.wildfire_url } satisfies ControlMessage,
-        })
       } else {
         const updated = await apiFetch<Session>(`/api/v1/sessions/${session.id}/phase`, {
           method: 'PATCH',
           body: JSON.stringify({ phase: next }),
         })
         setSession(updated)
-        channelRef.current?.send({
-          type: 'broadcast',
-          event: 'control',
-          payload: { type: 'phase', phase: next } satisfies ControlMessage,
-        })
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('errors.generic'))
@@ -262,11 +243,6 @@ export function FacilitatorPanel() {
         body: JSON.stringify({ phase: prev }),
       })
       setSession(updated)
-      channelRef.current?.send({
-        type: 'broadcast',
-        event: 'control',
-        payload: { type: 'phase', phase: prev } satisfies ControlMessage,
-      })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('errors.generic'))
     } finally {
@@ -312,15 +288,18 @@ export function FacilitatorPanel() {
     }
   }
 
-  function sendBroadcast() {
-    if (!broadcastMsg.trim() || !channelRef.current) return
-    channelRef.current.send({
-      type: 'broadcast',
-      event: 'control',
-      payload: { type: 'broadcast', message: broadcastMsg.trim() } satisfies ControlMessage,
-    })
-    toast.success(t('facilitator.broadcast_sent'))
-    setBroadcastMsg('')
+  async function sendBroadcast() {
+    if (!session || !broadcastMsg.trim()) return
+    try {
+      await apiFetch(`/api/v1/sessions/${session.id}/broadcast`, {
+        method: 'POST',
+        body: JSON.stringify({ message: broadcastMsg.trim() }),
+      })
+      toast.success(t('facilitator.broadcast_sent'))
+      setBroadcastMsg('')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('errors.generic'))
+    }
   }
 
   function exportCSV() {

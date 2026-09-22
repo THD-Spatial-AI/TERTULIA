@@ -1,29 +1,14 @@
 import { useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { t } from '@/lib/i18n'
-import { supabase } from '@/lib/supabase'
 import { redirectToWildfire } from '@/lib/utils'
-import type { ControlMessage } from '@/types'
 
 export function LaunchScreen() {
   const { slug } = useParams<{ slug: string }>()
 
   useEffect(() => {
     if (!slug) return
-
-    // If we land here after the launch event was already broadcast, resolve the
-    // authoritative wildfire_url from the backend (never from a broadcast).
     void redirectToWildfire(slug)
-
-    // Also listen in case we arrive just before the broadcast fires. The
-    // payload only triggers a re-fetch; it never supplies the redirect target.
-    const channel = supabase.channel(`session-control-${slug}`)
-    channel.on('broadcast', { event: 'control' }, ({ payload }: { payload: ControlMessage }) => {
-      if (payload.type === 'launch') {
-        void redirectToWildfire(slug)
-      }
-    }).subscribe()
-    return () => { supabase.removeChannel(channel) }
   }, [slug])
 
   return (

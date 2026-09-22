@@ -2,13 +2,24 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    supabase_url: str
-    supabase_service_key: str
+    # PostgreSQL
+    database_url: str
+
+    # Go authentication service
+    auth_service_url: str = "http://localhost:8001"
+    auth_internal_secret: str = ""
+    auth_realm: str = "tertulia"
+
+    # feeedback_pipeline backend URL
     pipeline_api_url: str
     pipeline_token: str
+
+    # Wildfire application base URL
     wildfire_base_url: str
-    app_secret_key: str
+
+    # CORS
     cors_origins: str = "http://localhost:5173"
+
     log_level: str = "INFO"
     enable_docs: bool = False
 

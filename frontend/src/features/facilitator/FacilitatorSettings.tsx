@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { t, getLanguage, setLanguage, type Language } from '@/lib/i18n'
-import { supabase } from '@/lib/supabase'
+import { getMe } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 
 const LANGS: { code: Language; label: string; name: string }[] = [
@@ -28,9 +28,9 @@ export function FacilitatorSettings() {
   const [selectedLang, setSelectedLang] = useState<Language>(getLanguage())
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) { navigate('/facilitator/login', { replace: true }); return }
-      setUserEmail(data.session.user.email)
+    getMe().then((me) => {
+      if (!me?.authenticated) { navigate('/facilitator/login', { replace: true }); return }
+      setUserEmail(me.email)
       setChecking(false)
     })
   }, [navigate])

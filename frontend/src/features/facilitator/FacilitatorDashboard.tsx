@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { t } from '@/lib/i18n'
-import { supabase } from '@/lib/supabase'
+import { getMe, signOut } from '@/lib/auth'
 import { apiFetch } from '@/lib/api'
 import type { Session } from '@/types'
 
@@ -47,9 +47,9 @@ export function FacilitatorDashboard() {
   const [userEmail, setUserEmail] = useState<string>()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) { navigate('/facilitator/login', { replace: true }); return }
-      setUserEmail(data.session.user.email)
+    getMe().then((me) => {
+      if (!me?.authenticated) { navigate('/facilitator/login', { replace: true }); return }
+      setUserEmail(me.email)
       setChecking(false)
       setLoadingList(true)
       apiFetch<Session[]>('/api/v1/sessions')

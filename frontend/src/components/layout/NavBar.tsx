@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { t, getLanguage, setLanguage, type Language } from '@/lib/i18n'
-import { supabase } from '@/lib/supabase'
+import { signOut } from '@/lib/auth'
 
 const LANGS: { code: Language; label: string }[] = [
   { code: 'en', label: 'EN' },
@@ -27,9 +27,8 @@ export function NavBar({ showSignOut = false, showFacilitatorNav = false, userEm
     setLang(code)
   }
 
-  async function handleSignOut() {
-    await supabase.auth.signOut()
-    window.location.href = '/facilitator/login'
+  function handleSignOut() {
+    signOut()
   }
 
   const isSettingsActive = location.pathname === '/facilitator/settings'

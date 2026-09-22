@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { NavBar } from '@/components/layout/NavBar'
 import { BroadcastBanner } from '@/components/ui/BroadcastBanner'
 import { WorkshopProgress } from '@/components/ui/WorkshopProgress'
 import { FloatingReactions } from '@/components/ui/FloatingReactions'
 import { t } from '@/lib/i18n'
-import { supabase } from '@/lib/supabase'
 import { useWorkshopChannel } from '@/lib/useWorkshopChannel'
 import { getStoredParticipant } from '@/lib/utils'
 import type { ReactionKind } from '@/types'
@@ -31,11 +30,16 @@ export function SlidesView() {
   const [reactionEvents, setReactionEvents] = useState<ReactionEvent[]>([])
   const [poppingButton, setPoppingButton] = useState<ReactionKind | null>(null)
   const participant = getStoredParticipant()
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const reactionIdRef = useRef(0)
 
-  // Control messages (phase nav + broadcast) handled by shared hook
-  const { broadcastMessage, dismissBroadcast } = useWorkshopChannel(slug)
+  const handleReaction = useCallback(({ kind, name }: { kind: string; name: string }) => {
+    const id = ++reactionIdRef.current
+    setReactionEvents(prev => [...prev.slice(-20), { id, kind, name }])
+  }, [])
+
+  const { broadcastMessage, dismissBroadcast, sendMessage } = useWorkshopChannel(slug, {
+    onReaction: handleReaction,
+  })
 
   useEffect(() => {
     if (!slug) return
@@ -45,25 +49,11 @@ export function SlidesView() {
       .catch(() => {})
   }, [slug])
 
-  // Separate subscription on the same channel for reactions (send + receive)
-  useEffect(() => {
-    if (!slug) return
-    const ch = supabase.channel(`session-control-${slug}`)
-    ch.on('broadcast', { event: 'reaction' }, ({ payload }: { payload: { kind: string; name: string } }) => {
-      const id = ++reactionIdRef.current
-      setReactionEvents(prev => [...prev.slice(-20), { id, kind: payload.kind, name: payload.name }])
-    }).subscribe()
-    channelRef.current = ch
-    return () => { supabase.removeChannel(ch); channelRef.current = null }
-  }, [slug])
-
   function sendReaction(kind: ReactionKind) {
     const name = participant?.display_name ?? 'You'
-    const id = ++reactionIdRef.current
-    setReactionEvents(prev => [...prev.slice(-20), { id, kind, name }])
+    sendMessage({ type: 'reaction', kind, name })
     setPoppingButton(kind)
     setTimeout(() => setPoppingButton(null), 400)
-    channelRef.current?.send({ type: 'broadcast', event: 'reaction', payload: { kind, name } })
   }
 
   return (

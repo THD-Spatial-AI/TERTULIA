@@ -72,10 +72,13 @@ export interface StakeholderEdge {
 
 export type ReactionType = 'emoji_fire' | 'emoji_heart' | 'emoji_question' | 'raise_hand'
 
-// Realtime channel message shapes
+// WebSocket message shapes
 export interface ControlMessage {
-  type: 'phase' | 'slide' | 'launch'
+  type: 'phase' | 'slide' | 'launch' | 'broadcast' | 'reaction'
   phase?: SessionPhase
   slide_index?: number
   wildfire_url?: string
+  message?: string
+  kind?: string
+  name?: string
 }
