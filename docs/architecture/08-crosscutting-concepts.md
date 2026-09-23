@@ -3,38 +3,30 @@
 ## Authentication & Authorization
 
 ### Participants (Anonymous)
-- No Supabase user account created
+- No user account created (no Keycloak identity)
 - Backend generates a `session_token` (UUID v4) on join
 - Token stored in browser `localStorage`
 - All subsequent template saves include `session_token` in request header
 - Backend validates token against `participants` table before any write operation
 
 ### Facilitators
-- Supabase Auth magic link (email-based, no password)
-- JWT stored in Supabase session (browser localStorage via Supabase JS client)
-- All facilitator API calls include `Authorization: Bearer {jwt}` header
-- Backend validates JWT via Supabase service role client
-- Session ownership enforced: facilitator can only control sessions they created
+- Authenticate via Keycloak (OpenID Connect), brokered by the Go auth-service
+- The auth-service issues a session; facilitator API calls are authorised against it
+- Backend validates the caller with `require_facilitator` (`backend/auth.py`)
+- Session ownership enforced: a facilitator can only control sessions they created
 
-### Row Level Security (Supabase)
+### Access Control (application-level)
 
-```sql
--- Participants can only read/write their own template rows
-CREATE POLICY "participants_own_persona" ON persona_cards
-  FOR ALL USING (
-    participant_id IN (
-      SELECT id FROM participants WHERE session_token = current_setting('app.session_token')
-    )
-  );
+Access is enforced in the FastAPI backend, not in the database (there is no
+Postgres RLS). Every query is scoped by the authenticated identity:
 
--- Sessions are readable by anyone with the slug (participants need to read session config)
-CREATE POLICY "sessions_public_read" ON sessions
-  FOR SELECT USING (true);
-
--- Sessions writable only by their facilitator
-CREATE POLICY "sessions_facilitator_write" ON sessions
-  FOR UPDATE USING (facilitator_id = auth.uid());
-```
+- **Participant writes** — the `session_token` in the request is validated against
+  the `participants` table; a participant can only read/write their own template rows.
+- **Facilitator actions** — session rows are filtered by `facilitator_id`, so a
+  facilitator can only read/update sessions they own (e.g.
+  `SELECT * FROM sessions WHERE id = $1 AND facilitator_id = $2`).
+- **Public session read** — anonymous participants may read the non-sensitive
+  session config by slug (see `SessionPublic` in `backend/models.py`).
 
 ## Internationalization (i18n)
 
@@ -65,13 +57,13 @@ const translations = {
 
 ### Frontend
 - Network errors on template autosave: show persistent "unsaved" indicator, retry on reconnect
-- Supabase Realtime disconnect: show "Reconnecting..." banner, auto-reconnect via Supabase client
+- WebSocket disconnect: show "Reconnecting..." banner, auto-reconnect via the workshop channel client
 - Session not found (invalid slug): 404 page with "Check the URL or QR code" message
 - Phase mismatch (participant tries to access template not yet unlocked): show "Waiting for facilitator" screen
 
 ### Backend
 - feeedback_pipeline unreachable at launch: log warning, continue with redirect (persona pre-registration is best-effort, not blocking)
-- Supabase timeout: return 503, frontend retries with exponential backoff (max 3 retries)
+- Database timeout: return 503, frontend retries with exponential backoff (max 3 retries)
 - Invalid session_token on template write: return 401
 
 ## Realtime Channel Management

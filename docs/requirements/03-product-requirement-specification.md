@@ -98,7 +98,7 @@
 | NF-05 | Privacy | No third-party analytics scripts |
 | NF-06 | Accessibility | All interactive elements have keyboard navigation and ARIA labels |
 | NF-07 | Responsiveness | All screens usable on tablet (768px viewport width minimum) |
-| NF-08 | Reliability | Supabase Realtime disconnect triggers auto-reconnect within 5s |
-| NF-09 | Security | Participants can only write to their own template records (Supabase RLS) |
+| NF-08 | Reliability | WebSocket disconnect triggers auto-reconnect within 5s |
+| NF-09 | Security | Participants can only write to their own template records (backend session_token check) |
 | NF-10 | Security | Facilitators can only control sessions they created |
 | NF-11 | Maintainability | Each feature folder is independently modifiable without touching others |

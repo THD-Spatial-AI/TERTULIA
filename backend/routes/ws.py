@@ -1,4 +1,4 @@
-"""WebSocket hub — replaces Supabase Realtime channels."""
+"""In-process WebSocket hub for real-time workshop updates."""
 from __future__ import annotations
 
 import asyncio

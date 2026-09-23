@@ -26,14 +26,14 @@ If the feeedback_pipeline backend is down when the facilitator triggers "Launch 
 
 ---
 
-### R-03 — Supabase Realtime Latency Spike
+### R-03 — WebSocket Broadcast Latency Spike
 **Probability**: Low | **Impact**: Medium
 
-Under high participant load or poor network conditions, Supabase Realtime broadcast latency may exceed the 500ms target, causing slide sync to feel sluggish.
+Under high participant load or poor network conditions, WebSocket broadcast latency may exceed the 500ms target, causing slide sync to feel sluggish.
 
 **Mitigation**:
-- Supabase Realtime is designed for thousands of concurrent connections — 50 participants is well within limits
-- Monitor with Supabase dashboard during workshop
+- The in-process WebSocket hub comfortably handles the tens of concurrent connections a workshop needs
+- Monitor backend WebSocket connection count and logs during the workshop
 - If persistent issue: implement optimistic local state (facilitator's slide advances instantly on their screen; broadcast is eventual)
 
 ---
@@ -45,7 +45,7 @@ If a participant clears their browser storage or switches devices mid-workshop, 
 
 **Mitigation**:
 - Display a "You're starting fresh" message if token not found — participant re-joins with same name
-- All previously submitted template data remains in Supabase (linked to old participant record)
+- All previously submitted template data remains in the database (linked to old participant record)
 - Facilitator can see both records in the completion view
 
 ---
@@ -75,7 +75,7 @@ The current slide sync broadcasts only an integer index. If the facilitator's if
 **Plan**: Investigate per-slide URL params (Google Slides supports `#slide=id.xxx`) as a more robust alternative.
 
 ### TD-03 — No Facilitator Session Recovery
-If the facilitator's browser crashes mid-session, they can reload and see the session state in Supabase — but their Realtime channel subscription is lost and participants are stuck on the last phase. There is no "reclaim control" flow.
+If the facilitator's browser crashes mid-session, they can reload and see the session state from the database — but their WebSocket subscription is lost and participants are stuck on the last phase. There is no "reclaim control" flow.
 
 **Plan**: Add facilitator reconnect flow in v1.1 — detect facilitator absence and show "Waiting for facilitator to reconnect" to participants.
 

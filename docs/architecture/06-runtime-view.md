@@ -3,7 +3,7 @@
 ## Scenario 1 — Participant Joins Session
 
 ```
-Participant Browser          Workshop Frontend           FastAPI Backend         Supabase
+Participant Browser          Workshop Frontend           FastAPI Backend         PostgreSQL
        │                           │                           │                    │
        │── opens /session/{slug} ──►                           │                    │
        │                           │── GET /api/v1/sessions/  ►│                    │
@@ -32,7 +32,7 @@ Participant Browser          Workshop Frontend           FastAPI Backend        
 ## Scenario 2 — Facilitator Advances Slide
 
 ```
-Facilitator Browser         Workshop Frontend           Supabase Realtime
+Facilitator Browser         Workshop Frontend           FastAPI WebSocket Hub
        │                           │                           │
        │── clicks Next Slide ──────►                           │
        │                           │── broadcast to ──────────►│
@@ -51,7 +51,7 @@ Participant 1 Browser              │                           │
 ## Scenario 3 — Template Unlock & Autosave
 
 ```
-Facilitator Browser         Workshop Frontend           FastAPI Backend         Supabase
+Facilitator Browser         Workshop Frontend           FastAPI Backend         PostgreSQL
        │                           │                           │                    │
        │── clicks "Unlock          │                           │                    │
        │   Persona Card" ──────────►                           │                    │
@@ -89,7 +89,7 @@ Facilitator Browser                │                            │           
 ## Scenario 4 — Wildfire Launch
 
 ```
-Facilitator Browser         FastAPI Backend         feeedback_pipeline      Supabase Realtime
+Facilitator Browser         FastAPI Backend         feedback pipeline       FastAPI WebSocket Hub
        │                           │                       │                      │
        │── clicks "Launch          │                       │                      │
        │   Wildfire" ──────────────►                       │                      │

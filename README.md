@@ -8,7 +8,7 @@ A real-time collaborative workshop platform for stakeholder co-design sessions â
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local   # fill in Supabase keys
+cp .env.example .env.local   # fill in auth-service URL + realm
 npm run dev                  # http://localhost:5173
 ```
 
@@ -18,7 +18,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate    # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env         # fill in Supabase + pipeline keys
+cp .env.example .env         # fill in database, auth, + pipeline keys
 uvicorn main:app --reload --port 8001
 ```
 
@@ -54,6 +54,8 @@ See [`pipeline/README.md`](./pipeline/README.md) for the feedback half. The pipe
 
 - **Frontend**: React 19 + TypeScript + Vite + TailwindCSS v4
 - **Backend**: FastAPI (Python 3.11+)
-- **Database**: Supabase (PostgreSQL + Realtime + Auth)
-- **Deploy**: Vercel (frontend) + Supabase cloud
+- **Database**: self-hosted PostgreSQL
+- **Auth**: Keycloak + Go auth-service (from the Storcito platform)
+- **Realtime**: WebSocket (in-process hub)
+- **Deploy**: Docker Compose (fully self-hosted)
 - **Languages**: DE / EN / ES / GL

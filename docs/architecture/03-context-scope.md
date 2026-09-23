@@ -10,15 +10,15 @@ The Workshop Logic Platform sits at the center of a three-system ecosystem:
 │                                                                 │
 │   ┌──────────────┐         ┌──────────────────────────────┐    │
 │   │  Facilitator │         │   Participant (anonymous)    │    │
-│   │  (magic link)│         │   (name + role + org)        │    │
+│   │  (Keycloak)  │         │   (name + role + org)        │    │
 │   └──────┬───────┘         └──────────────┬───────────────┘    │
 │          │ controls session                │ fills templates    │
 │          └─────────────┬───────────────────┘                   │
 │                        │                                        │
 │               ┌────────▼────────┐                              │
-│               │  Supabase       │                              │
-│               │  PostgreSQL +   │                              │
-│               │  Realtime + Auth│                              │
+│               │  FastAPI + WS   │                              │
+│               │  PostgreSQL     │                              │
+│               │  Keycloak auth  │                              │
 │               └─────────────────┘                              │
 └──────────────────────────┬──────────────────────────────────────┘
                            │
@@ -35,10 +35,20 @@ The Workshop Logic Platform sits at the center of a three-system ecosystem:
 
 ## External Interfaces
 
-### Supabase
-- **Type**: Managed cloud service (PostgreSQL + Realtime + Auth)
-- **Used for**: Session data, participant data, template responses, Realtime broadcast of phase/slide changes, facilitator authentication
-- **Protocol**: Supabase JS client (REST + WebSocket underneath)
+### PostgreSQL (self-hosted)
+- **Type**: Self-hosted PostgreSQL container (schema at `backend/db/schema.sql`)
+- **Used for**: Session data, participant data, template responses
+- **Protocol**: asyncpg connection pool from the FastAPI backend (`backend/db.py`)
+
+### Keycloak + Go auth-service
+- **Type**: Self-hosted OpenID Connect identity provider (Keycloak) fronted by the Go auth-service
+- **Used for**: Facilitator authentication and session management
+- **Protocol**: OIDC via the auth-service; the FastAPI backend validates the session with `require_facilitator`
+
+### WebSocket Hub (in the backend)
+- **Type**: In-process WebSocket hub (`backend/routes/ws.py`)
+- **Used for**: Real-time broadcast of phase/slide changes, presence, and reactions
+- **Protocol**: WebSocket, channels keyed by session slug
 
 ### Feedback Pipeline Backend
 - **Type**: FastAPI microservice (part of this repo at `pipeline/backend`)
@@ -55,11 +65,11 @@ The Workshop Logic Platform sits at the center of a three-system ecosystem:
 ### Browser (Participant)
 - **Type**: Web browser on desktop or tablet
 - **Joins via**: QR code scan (in-person) or URL (online)
-- **Realtime**: Supabase Realtime WebSocket for live updates
+- **Realtime**: WebSocket connection to the backend hub for live updates
 
 ### Browser (Facilitator)
 - **Type**: Web browser on laptop/projector screen
-- **Auth**: Supabase magic link (email)
+- **Auth**: Keycloak (via the Go auth-service)
 - **Controls**: Session phase, slide index, template unlock, launch
 
 ## Scope Boundaries

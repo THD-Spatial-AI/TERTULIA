@@ -42,10 +42,6 @@ Thumbs.db
 *.log
 logs/
 
-# Supabase local
-supabase/.branches/
-supabase/.temp/
-
 # MkDocs build output
 site/
 

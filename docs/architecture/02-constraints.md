@@ -6,8 +6,8 @@
 |---|---|
 | React 19 + TypeScript frontend | Matches Storcito-Wildfire stack for consistency across THD Spatial AI projects |
 | FastAPI (Python 3.11+) backend | Same language as feeedback_pipeline; reduces context switching for developers |
-| Supabase for database and auth | Managed hosting requirement; Realtime subscriptions replace custom WebSocket server |
-| Vercel for frontend deployment | Zero-config deployment; pairs natively with Supabase |
+| PostgreSQL + Keycloak for database and auth | Self-hosted open-source stack; participant data stays on-premise |
+| Docker Compose for deployment | Single-command self-hosted stack (frontend, backend, DB, auth) |
 | No code reuse from TEMPO or OpenTech-DB | Workshop platform is fully standalone; avoids coupling to unrelated energy modelling projects |
 | Persona card built fresh in this repo | Not imported from feeedback_pipeline; the workshop owns its own persona schema |
 | TailwindCSS v4 | Consistent with Wildfire frontend styling approach |
@@ -37,7 +37,7 @@
 |---|---|
 | Folder structure | Feature-first: `features/<name>/` with self-contained components, hooks, types |
 | i18n keys | `snake_case`, namespaced by feature (e.g., `persona_card.goals_label`) |
-| Supabase Realtime channels | `session:{id}:control`, `session:{id}:presence`, `session:{id}:reactions` |
+| WebSocket channels (keyed by session slug) | `session:{slug}:control`, `session:{slug}:presence`, `session:{slug}:reactions` |
 | API base path | `/api/v1/` |
 | Environment variables (frontend) | `VITE_` prefix |
-| Environment variables (backend) | `SUPABASE_`, `PIPELINE_`, `APP_` prefixes |
+| Environment variables (backend) | `DATABASE_URL`, `AUTH_`, `PIPELINE_`, `WILDFIRE_` prefixes |

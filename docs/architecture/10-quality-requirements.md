@@ -15,7 +15,7 @@
 ### Availability
 | Scenario | Target |
 |---|---|
-| Workshop day availability | 99.9% (Supabase SLA) |
+| Workshop day availability | Self-hosted; target 99.9% on workshop days (single-host Docker Compose) |
 | Recovery from Realtime disconnect | Auto-reconnect within 5s |
 | Graceful degradation if feeedback_pipeline unreachable | Workshop continues; pre-registration skipped with warning |
 

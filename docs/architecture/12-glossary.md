@@ -6,7 +6,7 @@
 A bounded facilitated event where a group of stakeholders (participants) collaborate on structured templates under the guidance of a facilitator. Corresponds to one record in the `sessions` table.
 
 **Facilitator**
-The THD Spatial AI team member who creates and controls a workshop session. Has an authenticated account (Supabase magic link). Controls phase transitions, template unlocking, and the Wildfire launch.
+The THD Spatial AI team member who creates and controls a workshop session. Has an authenticated account (Keycloak, via the Go auth-service). Controls phase transitions, template unlocking, and the Wildfire launch.
 
 **Participant**
 A domain expert (firefighter, mayor, scientist, academic) who joins a workshop session anonymously (name + role + org only). Fills in collaborative templates.
@@ -33,15 +33,15 @@ Template 3. A sticky-note grid where a participant captures the real-world probl
 Template 4. A freeform node-edge graph where a participant maps the people and organizations they coordinate with during a wildfire event.
 
 **Push Redirect**
-The mechanism by which the facilitator simultaneously navigates all connected participants to the Wildfire application URL. Implemented via Supabase Realtime broadcast on `session:{id}:control`.
+The mechanism by which the facilitator simultaneously navigates all connected participants to the Wildfire application URL. Implemented via a WebSocket broadcast on `session:{slug}:control`.
 
 **Pre-registration**
 The act of sending a participant's persona data to feeedback_pipeline before the Wildfire redirect, so the `PersonaForm` in Wildfire's `FeedbackOverlay` is skipped.
 
 ## Technical Terms
 
-**Supabase Realtime**
-Supabase's WebSocket-based broadcast system. Used for syncing phase changes, slide index, participant presence, and reactions across all connected browsers.
+**WebSocket Hub**
+The backend's in-process WebSocket broadcast system (`backend/routes/ws.py`). Used for syncing phase changes, slide index, participant presence, and reactions across all connected browsers.
 
 **feedback pipeline**
 The feedback half of Tertulia, now part of this repo at `pipeline/`. Captures in-app feedback from the target app, processes it with local AI (Ollama via n8n), and creates GitHub issues. Receives pre-registered personas from the workshop platform.
@@ -52,11 +52,11 @@ The React component from the feedback pipeline (`pipeline/overlay/src/FeedbackOv
 **session_token (pipeline)**
 Same concept as `session_token` in the workshop platform. When passed to the target app as a URL query param (`?tertulia_token=...` — see `redirectToWildfire` in `frontend/src/lib/utils.ts`), the FeedbackOverlay sends it with feedback so the backend attaches the pre-registered persona and the participant skips the PersonaForm.
 
-**Magic Link**
-Supabase Auth's passwordless email authentication. Facilitator enters email → receives a one-click login link → authenticated session established.
+**Keycloak**
+The self-hosted OpenID Connect identity provider. Facilitators authenticate through it via the Go auth-service, which establishes the session used for facilitator API calls.
 
-**RLS (Row Level Security)**
-Supabase's PostgreSQL-level access control. Ensures participants can only read/write their own template rows, and facilitators can only control their own sessions.
+**Access Control**
+Enforced in the FastAPI backend (not the database). Participants can only read/write their own template rows (via `session_token`); facilitators can only control sessions they created (via `facilitator_id`).
 
 **Arc42**
 The software architecture documentation template used by THD Spatial AI projects. This documentation follows the standard 12-section Arc42 structure.

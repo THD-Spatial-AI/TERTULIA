@@ -8,7 +8,7 @@ Workshop Logic Platform
 └── backend/           FastAPI — session management, pipeline integration
 ```
 
-External systems: Supabase, feeedback_pipeline, Storcito-Wildfire
+External systems: PostgreSQL, Keycloak + Go auth-service, feedback pipeline (`pipeline/`), Storcito-Wildfire
 
 ---
 
@@ -27,7 +27,9 @@ frontend/src/
 │   └── launch/               Push redirect + pre-registration trigger
 ├── components/               Shared UI primitives (Button, Card, Modal, Badge)
 └── lib/
-    ├── supabase.ts            Supabase browser client + typed channel helpers
+    ├── auth.ts               Facilitator auth client (Keycloak via auth-service)
+    ├── useWorkshopChannel.ts WebSocket client + typed channel helpers
+    ├── api.ts                REST client for the FastAPI backend
     └── i18n.ts               Translation strings (DE/EN/ES/GL)
 ```
 
@@ -39,7 +41,7 @@ frontend/src/
 
 ### facilitator
 - **Purpose**: Session creation, live participant list, phase/template control
-- **Auth**: Supabase magic link (email)
+- **Auth**: Keycloak (via the Go auth-service)
 - **Realtime**: Publishes to `session:{id}:control`; subscribes to `session:{id}:presence` and `session:{id}:reactions`
 - **Key actions**: Create session, advance phase, unlock template, view completion counts, trigger launch
 
@@ -84,22 +86,24 @@ backend/
 │   ├── sessions.py        POST /api/v1/sessions (create), GET /api/v1/sessions/{slug}
 │   ├── participants.py    POST /api/v1/participants/join, GET /api/v1/participants/{session_id}
 │   ├── templates.py       PUT /api/v1/templates/persona/{id}, user-flow, problem-board, stakeholder-map
-│   └── launch.py          POST /api/v1/launch/{session_id}
-├── supabase_client.py     Supabase Python admin client (service role key)
-└── pipeline_integration.py   httpx calls to feeedback_pipeline
+│   ├── launch.py          POST /api/v1/launch/{session_id}
+│   └── ws.py              WebSocket hub — real-time broadcast to participants
+├── db.py                  asyncpg PostgreSQL connection pool
+├── auth.py                Facilitator auth (validates the auth-service session)
+└── pipeline_integration.py   httpx calls to the feedback pipeline
 ```
 
 ### launch.py — Critical Integration Path
 
 ```
 POST /api/v1/launch/{session_id}
-    ├── Fetch all participants for session from Supabase
+    ├── Fetch all participants for session from PostgreSQL
     ├── Fetch persona_card for each participant
     ├── For each participant:
     │   └── POST feeedback_pipeline/api/v1/persona/pre-register
     │         { workshop_tag, session_token, name, role, org, tech_comfort, ... }
     ├── Construct Wildfire URL: {WILDFIRE_URL}?workshop_tag={tag}&session_token={token}
-    ├── Publish to Supabase Realtime: session:{id}:control
+    ├── Broadcast over WebSocket: session:{slug}:control
     │     { type: "launch", wildfire_url: "..." }  (per participant, with their token)
-    └── Update session.phase = "launched" in Supabase
+    └── Update session.phase = "launched" in PostgreSQL
 ```

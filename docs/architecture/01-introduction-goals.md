@@ -22,7 +22,7 @@ The platform acts as the orchestration layer between a workshop facilitation ses
 | 4 | Pipeline integration | Participant personas feed automatically into feeedback_pipeline |
 | 5 | Multilingual | Full DE / EN / ES / GL support from day one |
 | 6 | Tablet-first | Usable on tablets and laptops without horizontal scroll |
-| 7 | Zero infrastructure | Supabase + Vercel managed hosting, no server maintenance |
+| 7 | Self-hosted | Runs fully on-premise via Docker Compose; no third-party cloud or managed-service dependency |
 
 ## Stakeholders
 

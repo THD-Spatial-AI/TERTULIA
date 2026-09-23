@@ -39,7 +39,7 @@ Sending a participant's persona to feeedback_pipeline before they arrive in Wild
 | Acronym | Expansion |
 |---|---|
 | THD | Technische Hochschule Deggendorf |
-| RLS | Row Level Security (Supabase/PostgreSQL feature) |
+| OIDC | OpenID Connect (Keycloak authentication protocol) |
 | SPA | Single Page Application |
 | ASGI | Asynchronous Server Gateway Interface (Python web server standard) |
 | CDN | Content Delivery Network |

@@ -1,22 +1,22 @@
 # Architectural Decisions
 
-## ADR-001 — Supabase Realtime over Custom WebSocket Server
+## ADR-001 — In-Process WebSocket Hub for Real-Time Sync
 
-**Status**: Accepted
+**Status**: Accepted (supersedes an earlier managed-realtime approach)
 
-**Context**: The platform needs real-time sync for slide index, phase changes, and reactions across all connected participants. Options considered: custom WebSocket server (Go or Python), Socket.IO, Supabase Realtime.
+**Context**: The platform needs real-time sync for slide index, phase changes, and reactions across all connected participants. Options considered: an in-process WebSocket hub in the FastAPI backend, a standalone WebSocket server (Go or Python), Socket.IO, and a managed realtime SaaS.
 
-**Decision**: Use Supabase Realtime broadcast channels.
+**Decision**: Use an in-process WebSocket hub inside the FastAPI backend (`backend/routes/ws.py`), with broadcast channels keyed by session slug.
 
 **Rationale**:
-- Workshop sessions involve tens of participants, not thousands — Supabase handles this scale easily
-- Eliminates the need to run a stateful WebSocket server (reduces ops burden)
-- Integrates natively with Supabase PostgreSQL already used for persistence
-- Supabase JS client handles reconnection logic automatically
+- Workshop sessions involve tens of participants, not thousands — a single-process hub handles this easily
+- Keeps the whole stack fully self-hosted (no third-party cloud, participant data stays on-premise)
+- No extra messaging service to run or pay for
+- Lives next to the data and auth already in the backend
 
 **Consequences**:
-- Slight latency overhead (~100-300ms) vs. dedicated WebSocket — acceptable for workshop interactions
-- Dependency on Supabase availability (mitigated by Supabase SLA and auto-reconnect)
+- Single-process — no horizontal scaling across backend replicas without a shared pub/sub (e.g. Redis); acceptable at workshop scale
+- The frontend handles reconnection (show "Reconnecting…", auto-retry)
 
 ---
 
@@ -97,19 +97,20 @@
 
 ---
 
-## ADR-006 — Vercel + Supabase Cloud (No Self-Hosting)
+## ADR-006 — Self-Hosted Docker Compose (No Managed Cloud)
 
-**Status**: Accepted
+**Status**: Accepted (supersedes an earlier managed-cloud approach)
 
-**Context**: The platform must be reachable for online workshops without requiring participants to install anything. Hosting options: THD/university server (Docker), cloud PaaS (Vercel + Railway), Supabase cloud.
+**Context**: The platform must be reachable for online workshops without requiring participants to install anything, while keeping participant data on-premise and the stack fully open-source. Hosting options: a THD/university server running Docker, or cloud PaaS + managed backend services.
 
-**Decision**: Vercel for frontend, Supabase cloud for DB/Realtime/Auth, Railway or Render for FastAPI backend.
+**Decision**: Self-host the entire stack via Docker Compose (frontend, FastAPI backend, PostgreSQL, Keycloak, Go auth-service, and the feedback pipeline) on a single host.
 
 **Rationale**:
-- Zero infrastructure maintenance
-- Vercel + Supabase pair natively (Vercel has first-class Supabase integration)
-- Immediate global CDN for frontend assets — fast load for remote participants worldwide
+- All participant data stays on THD infrastructure — no third-party data processor
+- Fully open-source; no per-seat or usage-based SaaS cost
+- One `docker compose up` brings up the whole system, reproducibly, anywhere
+- Aligns with the feedback pipeline, which already runs local Ollama + n8n
 
 **Consequences**:
-- Data stored in Supabase cloud (not on THD servers) — mitigated by anonymous-only participant data and the ability to self-host Supabase in future
-- Monthly cost (Supabase Pro ~$25/mo if free tier exceeded)
+- The team operates its own host (updates, backups, TLS) instead of offloading to a PaaS
+- No built-in global CDN; fine for regional/EU workshops. A reverse proxy (nginx) fronts the services for TLS

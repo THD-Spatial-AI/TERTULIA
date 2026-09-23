@@ -3,7 +3,7 @@
 ## User Roles
 
 ### Facilitator
-- Has a Supabase account (authenticated via magic link)
+- Has a facilitator account (authenticated via Keycloak)
 - Creates workshop sessions (title, workshop_tag, slides URL, Wildfire URL)
 - Controls session flow from a dedicated control panel
 - Sees all participants in real-time; monitors template completion
@@ -67,7 +67,7 @@
 1. Participant sees Persona Card form (goals, pain points, tech comfort slider)
 2. Fills fields; each field autosaves on blur
 3. Clicks "Done" — `completed_at` set; completion counter in facilitator panel increments
-**Outcome**: Persona card stored in Supabase; facilitator sees progress
+**Outcome**: Persona card stored in PostgreSQL; facilitator sees progress
 
 ---
 
@@ -78,7 +78,7 @@
 1. Participant sees step editor with one default step
 2. Adds steps (label + description), reorders via drag, deletes unwanted steps
 3. Clicks "Done" — flow saved
-**Outcome**: User flow steps stored as JSONB in Supabase
+**Outcome**: User flow steps stored as JSONB in PostgreSQL
 
 ---
 

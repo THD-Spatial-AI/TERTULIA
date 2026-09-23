@@ -25,7 +25,7 @@
 
 | Requirement | Acceptance Criterion |
 |---|---|
-| Template isolation | Participant A cannot read or write Participant B's template data (enforced by Supabase RLS) |
+| Template isolation | Participant A cannot read or write Participant B's template data (enforced in the backend by session_token) |
 | Session isolation | Realtime channels are scoped by session ID; cross-session broadcast is impossible |
 | Facilitator ownership | A facilitator cannot control or view another facilitator's session |
 | Token confidentiality | session_token never appears in Realtime broadcasts to other participants; never logged |
@@ -35,7 +35,7 @@
 
 | Requirement | Acceptance Criterion |
 |---|---|
-| Realtime reconnection | Supabase Realtime disconnect triggers auto-reconnect; banner shown to user within 2s of disconnect |
+| Realtime reconnection | WebSocket disconnect triggers auto-reconnect; banner shown to user within 2s of disconnect |
 | Pipeline failure tolerance | feeedback_pipeline unreachable at launch does not block Wildfire redirect |
 | Autosave durability | If browser refresh occurs mid-template, all previously autosaved fields are restored on reload |
 
