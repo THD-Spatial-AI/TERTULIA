@@ -100,10 +100,13 @@ POST /api/v1/launch/{session_id}
     ├── Fetch all participants for session from PostgreSQL
     ├── Fetch persona_card for each participant
     ├── For each participant:
-    │   └── POST feeedback_pipeline/api/v1/persona/pre-register
+    │   └── POST pipeline/api/v1/persona/pre-register
     │         { workshop_tag, session_token, name, role, org, tech_comfort, ... }
-    ├── Construct Wildfire URL: {WILDFIRE_URL}?workshop_tag={tag}&session_token={token}
-    ├── Broadcast over WebSocket: session:{slug}:control
-    │     { type: "launch", wildfire_url: "..." }  (per participant, with their token)
-    └── Update session.phase = "launched" in PostgreSQL
+    ├── Update session.phase = "launched" in PostgreSQL
+    └── Broadcast over WebSocket: session:{slug}:control  { type: "launch" }
+          (no URL/token in the payload — anyone can send on the channel)
 ```
+
+Each participant's browser then runs `redirectToWildfire` (`frontend/src/lib/utils.ts`):
+re-reads the **authoritative** `wildfire_url` from `GET /sessions/{slug}` (never trusts the
+broadcast), appends its own `?tertulia_token={session_token}` from `localStorage`, and navigates.

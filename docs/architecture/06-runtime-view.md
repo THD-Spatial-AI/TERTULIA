@@ -105,17 +105,15 @@ Facilitator Browser         FastAPI Backend         feedback pipeline       Fast
        │                           │                       │── stores persona     │
        │                           │◄── 200 ok ────────────│                      │
        │                           │                       │                      │
-       │                           │── for each participant:                      │
-       │                           │   broadcast to ───────────────────────────►  │
-       │                           │   session:{id}:control│                      │
-       │                           │   {type:"launch",     │                      │
-       │                           │    url:"https://      │                      │
-       │                           │    wildfire...?       │                      │
-       │                           │    workshop_tag=...   │                      │
-       │                           │    &session_token=..."│                      │
+       │                           │── set phase="launched"│                      │
+       │                           │── broadcast ──────────────────────────────►  │
+       │                           │   session:{slug}:control                     │
+       │                           │   { type:"launch" }   │                      │
+       │                           │   (no URL/token in payload)                  │
        │                           │                       │                      │
 Participant Browser                │                       │                      │
        │◄── receives launch event ─────────────────────────────────────────────── │
-       │── navigates to Wildfire   │                       │                      │
-       │   URL with params ────────►                       │                      │
+       │── GET /sessions/{slug} ───►  (re-read authoritative wildfire_url)         │
+       │── navigates to wildfire_url │                     │                      │
+       │   + ?tertulia_token={own}   │                     │                      │
 ```

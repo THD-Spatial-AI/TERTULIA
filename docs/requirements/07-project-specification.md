@@ -31,7 +31,7 @@
 - Location: `C:\Users\user\Desktop\THD-SPATIAL-AI\Workshops\`
 - Version control: Git (initialize on project start)
 - Branch strategy: `main` (production), `develop` (integration), `feature/*` (feature branches)
-- CI/CD: Vercel auto-deploys on push to `main`
+- CI/CD: rebuild and restart the Docker Compose stack on the self-hosted host after merging to `main`
 
 ## Definition of Done
 

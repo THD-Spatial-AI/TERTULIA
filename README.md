@@ -26,11 +26,9 @@ uvicorn main:app --reload --port 8001
 
 | Document | Purpose |
 |---|---|
-| [IDEA.md](./IDEA.md) | Product vision and 3-phase journey |
-| [CLAUDE.md](./CLAUDE.md) | Developer reference (stack, setup, conventions) |
-| [ROADMAP.md](./ROADMAP.md) | Development phases and milestones |
 | [docs/requirements/](./docs/requirements/) | Product requirements and user stories |
 | [docs/architecture/](./docs/architecture/) | Arc42 architecture documentation |
+| [pipeline/README.md](./pipeline/README.md) | Feedback pipeline — overlay, backend, and workshop reports |
 
 ## The full journey
 

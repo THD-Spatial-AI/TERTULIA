@@ -18,7 +18,7 @@
 |---|---|
 | Must work in-person and online | Workshops are held both on-site and remotely |
 | No registration for participants | Domain experts (firefighters, mayors) should not need to create accounts |
-| Facilitator accounts via magic link only | Low-overhead auth for small facilitator team |
+| Facilitator accounts via Keycloak (OIDC) | Self-hosted auth for the small facilitator team |
 | Languages: DE / EN / ES / GL | Matches feeedback_pipeline i18n scope; same stakeholder audience |
 | Desktop + tablet target | Primary device profile for workshop participants |
 

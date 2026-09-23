@@ -27,6 +27,6 @@ This is the highest practical risk for in-person sessions. The real-time WebSock
 ---
 
 ### R-05 — Persona Schema Drift
-The workshop platform's `PersonaCard` schema and feeedback_pipeline's `PersonaData` Pydantic model are maintained in separate repositories. If feeedback_pipeline adds required fields, the pre-registration call may fail silently.
+The workshop platform's `PersonaCard` schema (`backend/models.py`) and the pipeline's `PersonaData` / `PreRegisteredPersona` models (`pipeline/backend/models.py`) are maintained as separate modules (now co-located in this repo). If the pipeline adds required fields, the pre-registration call may fail silently.
 
 **Tracking**: Add a comment block in `backend/pipeline_integration.py` listing all mapped fields and the expected pipeline API version. Run a pre-workshop smoke test.

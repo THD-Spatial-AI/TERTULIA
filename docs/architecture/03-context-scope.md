@@ -87,7 +87,7 @@ The Workshop Logic Platform sits at the center of a three-system ecosystem:
 ### Out of Scope (v1)
 - Slide authoring inside the platform
 - Video/audio conferencing (use Zoom/Teams alongside)
-- Wildfire app modifications (FeedbackOverlay changes are feeedback_pipeline's responsibility)
+- Wildfire app modifications (embedding the overlay into Wildfire is done in the Wildfire project; the overlay package itself lives in `pipeline/overlay`)
 - Analytics dashboard across multiple workshops
 - AI-assisted synthesis of template responses
 - Export (PDF / Excel) of workshop outputs

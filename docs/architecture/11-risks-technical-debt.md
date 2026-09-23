@@ -53,12 +53,12 @@ If a participant clears their browser storage or switches devices mid-workshop, 
 ### R-05 — Persona Schema Drift Between Workshop and Pipeline
 **Probability**: Medium | **Impact**: Medium
 
-The workshop's `PersonaCard` schema and feeedback_pipeline's `PersonaData` Pydantic model may evolve independently, causing the pre-registration call to fail or lose fields.
+The workshop's `PersonaCard` schema (`backend/models.py`) and the pipeline's `PersonaData` / `PreRegisteredPersona` models (`pipeline/backend/models.py`) may evolve independently, causing the pre-registration call to fail or lose fields. (Reduced now that both live in one repo and share an explicit mapping.)
 
 **Mitigation**:
 - Document the field mapping in `backend/pipeline_integration.py` with explicit comments
 - Add a smoke test: pre-registration endpoint called with sample data as part of workshop setup checklist
-- Pin feeedback_pipeline API version in the integration (include API version header)
+- Keep the two models and their mapping in sync when either changes — both are in this repo
 
 ---
 

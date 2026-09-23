@@ -62,13 +62,13 @@
 
 **Status**: Accepted
 
-**Context**: feeedback_pipeline has a `PersonaForm` component with name, role, org, familiarity, experience, comfort. Re-using it would create a cross-repo dependency.
+**Context**: The feedback pipeline has a `PersonaForm` component with name, role, org, familiarity, experience, comfort. Re-using it would couple the workshop UI to the overlay package (`pipeline/overlay`).
 
 **Decision**: Workshop platform builds its own Persona Card component and schema.
 
 **Rationale**:
 - Workshop persona is richer (goals, pain points, stakeholder context) than the feeedback_pipeline persona (which is UI-feedback focused)
-- Coupling to feeedback_pipeline's frontend package creates maintenance risk
+- Coupling to the overlay package (`pipeline/overlay`) creates maintenance risk
 - The workshop platform owns the canonical persona — it pre-registers to the pipeline, not the other way around
 
 **Consequences**:
