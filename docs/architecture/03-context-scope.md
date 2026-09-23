@@ -40,11 +40,11 @@ The Workshop Logic Platform sits at the center of a three-system ecosystem:
 - **Used for**: Session data, participant data, template responses, Realtime broadcast of phase/slide changes, facilitator authentication
 - **Protocol**: Supabase JS client (REST + WebSocket underneath)
 
-### feeedback_pipeline Backend
-- **Type**: FastAPI microservice (separate project at `../STORCITO/feeedback_pipeline`)
-- **Used for**: Pre-registering participant personas before Wildfire redirect
-- **Protocol**: HTTP POST to `/api/v1/persona/pre-register`
-- **Auth**: Shared `WORKSHOP_TOKEN` header
+### Feedback Pipeline Backend
+- **Type**: FastAPI microservice (part of this repo at `pipeline/backend`)
+- **Used for**: Pre-registering participant personas before the target-app redirect; later turning in-app feedback into GitHub issues
+- **Protocol**: HTTP POST to `/api/v1/persona/pre-register` (and `/api/v1/feedback`)
+- **Auth**: Shared token header (`PIPELINE_TOKEN` == pipeline `WORKSHOP_TOKEN`)
 
 ### Storcito-Wildfire
 - **Type**: External React web application (separate project)

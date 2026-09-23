@@ -36,7 +36,18 @@ export async function redirectToWildfire(slug: string): Promise<void> {
   const session = await res.json().catch(() => null)
   if (session?.phase !== 'launched') return
   const target = safeExternalUrl(session?.wildfire_url)
-  if (target) window.location.href = target
+  if (!target) return
+  // Carry the participant's session token across to the target app so the
+  // feedback overlay can link submissions back to their pre-registered persona
+  // (localStorage isn't shared across origins). Non-fatal if absent.
+  const token = getStoredSessionToken()
+  let href = target
+  if (token) {
+    const url = new URL(target)
+    url.searchParams.set('tertulia_token', token)
+    href = url.href
+  }
+  window.location.href = href
 }
 
 export function getStoredSessionToken(): string | null {

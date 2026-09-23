@@ -1,0 +1,46 @@
+# Production override — layer this on top of the base file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# On a machine with no NVIDIA GPU, add the CPU override in the middle:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.cpu.yml \
+#                  -f docker-compose.prod.yml up -d
+#
+# What this changes versus the base (workstation) file:
+#   - nginx becomes the only public entry point, on port 80
+#   - every other service is bound to 127.0.0.1, reachable via SSH tunnel only
+#
+# The base file publishes n8n, Ollama and Portainer on 0.0.0.0. On a server
+# that exposes an unauthenticated Ollama and the n8n editor to the network, so
+# the bindings below are the important part of this file, not the nginx entry.
+#
+# `!override` is required because Compose merges published ports by appending —
+# without it the original 0.0.0.0 binding stays in place alongside the new one.
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - feedback-pipeline
+    restart: unless-stopped
+
+  feedback-pipeline:
+    ports: !override
+      - "127.0.0.1:9000:8000"
+
+  n8n:
+    ports: !override
+      - "127.0.0.1:5678:5678"
+
+  ollama:
+    ports: !override
+      - "127.0.0.1:11434:11434"
+
+  portainer:
+    ports: !override
+      - "127.0.0.1:9443:9443"

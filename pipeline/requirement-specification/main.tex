@@ -1,0 +1,86 @@
+\documentclass[12pt,twoside]{report}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Definitions for the title page
+% Edit these to provide the correct information
+% e.g. \newcommand{\reportauthor}{Timothy Kimber}
+
+\newcommand{\reporttitle}{Requirement Specification}
+\newcommand{\reportauthor}{Andreas W. Weber}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% load some definitions and default packages
+\input{styles/includes}
+
+% load some macros
+\input{styles/extentions}
+
+\date{\today}
+
+\begin{document}
+
+% load title page
+\input{styles/titlepage}
+
+
+% page numbering etc.
+\pagenumbering{roman}
+\clearpage{\pagestyle{empty}\cleardoublepage}
+\setcounter{page}{1}
+\pagestyle{fancy}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%--- table of contents
+\fancyhead[RE,LO]{\sffamily {Table of Contents}}
+\tableofcontents 
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\fancyhead[LE,RO]{\slshape \rightmark}
+\fancyhead[LO,RE]{\slshape \leftmark}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%$ General Description
+\markdownInput{content/01-general-description.md}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Use of Product
+\markdownInput{content/02-use-product.md}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Requirement Specification
+\markdownInput{content/03-product-requirement-specification.md}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% System Model
+\markdownInput{content/04-product-system-model.md}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Environment Specification
+\markdownInput{content/05-environment-specification.md}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Quality Requirements
+\markdownInput{content/06-quality-requirements.md}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Project Specification
+\markdownInput{content/07-project-specification.md}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Risks \& technical dept
+\markdownInput{content/08-risk-specification.md}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Glossary
+\markdownInput{content/09-glossary.md}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% References
+\bibliographystyle{abbrvnat}
+\bibliography{references}
+
+
+\end{document}

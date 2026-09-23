@@ -1,0 +1,13 @@
+# CPU-only override — for machines without an NVIDIA GPU.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.cpu.yml up -d
+#
+# Removes the GPU reservation on the ollama service so the stack still starts on
+# a laptop / VM without an NVIDIA card. Inference runs on the CPU (much slower,
+# but functional for testing the pipeline end to end).
+#
+# `!reset` is required because Compose merges list entries by *appending* — a
+# plain empty list would leave the original GPU device in place.
+services:
+  ollama:
+    deploy: !reset null

@@ -1,0 +1,13 @@
+.agents
+CLAUDE.md
+IDEA.md
+# Secrets — never commit any real env file; only the *.example templates
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+overlay/node_modules
+backend/__pycache__
+skills-lock.json
+.claude

@@ -6,6 +6,11 @@ SHELL         := powershell.exe
 .SHELLFLAGS   := -NoProfile -NonInteractive -Command
 .DEFAULT_GOAL := help
 
+# Host ports (mirror the defaults in .env / docker-compose.yml). Override on the
+# command line, e.g.  make models OLLAMA_PORT=11500
+OLLAMA_PORT   ?= 11434
+PIPELINE_PORT ?= 9000
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Help
 # ─────────────────────────────────────────────────────────────────────────────
@@ -19,11 +24,12 @@ help: ## Show this help message
 # ─────────────────────────────────────────────────────────────────────────────
 
 .PHONY: env
-env: ## Copy .env.example files (safe — will not overwrite existing files)
+env: ## Copy .env.example files + generate the n8n encryption key
 	if (-not (Test-Path '.env'))                { Copy-Item '.env.example' '.env';                         Write-Host 'Created .env (docker-compose vars)' }
 	if (-not (Test-Path 'backend\.env'))        { Copy-Item 'backend\.env.example' 'backend\.env';         Write-Host 'Created backend\.env' }
 	if (-not (Test-Path 'frontend\.env.local')) { Copy-Item 'frontend\.env.example' 'frontend\.env.local'; Write-Host 'Created frontend\.env.local' }
-	Write-Host 'Fill in .env, backend\.env and frontend\.env.local before starting.'
+	if ((Get-Content '.env' -Raw) -match '(?m)^N8N_ENCRYPTION_KEY=\s*$$') { $$k = -join ((1..32) | ForEach-Object { '{0:x2}' -f (Get-Random -Maximum 256) }); (Get-Content '.env') -replace '^N8N_ENCRYPTION_KEY=.*$$', ('N8N_ENCRYPTION_KEY=' + $$k) | Set-Content '.env'; Write-Host 'Generated a per-machine N8N_ENCRYPTION_KEY in .env' }
+	Write-Host 'Fill in .env (PIPELINE_TOKEN, GITHUB_TOKEN, GITHUB_REPO), backend\.env and frontend\.env.local before starting.'
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Local (no Docker) — install & run
@@ -75,6 +81,29 @@ down: ## Stop and remove containers
 
 .PHONY: restart
 restart: down up ## Stop then restart all containers
+
+.PHONY: up-cpu
+up-cpu: ## Start all containers on a machine without an NVIDIA GPU
+	docker compose -f docker-compose.yml -f docker-compose.cpu.yml up -d
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Feedback pipeline (Ollama + n8n)
+# ─────────────────────────────────────────────────────────────────────────────
+
+.PHONY: models
+models: ## Pull the two Ollama models used by the pipeline
+	Write-Host 'Waiting for Ollama...'; do { Start-Sleep 2 } until (try { (Invoke-WebRequest -UseBasicParsing http://localhost:$(OLLAMA_PORT)/api/tags).StatusCode -eq 200 } catch { $$false })
+	docker compose exec ollama ollama pull qwen2.5:14b
+	docker compose exec ollama ollama pull qwen2.5vl:7b
+
+.PHONY: logs-pipeline
+logs-pipeline: ## Tail the feedback-pipeline container logs
+	docker compose logs -f feedback-pipeline
+
+.PHONY: report
+report: ## Download a workshop report ZIP. Usage: make report TAG=workshop-2026-munich
+	if (-not '$(TAG)') { Write-Host 'Set TAG, e.g. make report TAG=workshop-2026-munich'; exit 1 }
+	$$t = (Get-Content '.env' | Select-String '^PIPELINE_TOKEN=').ToString().Split('=',2)[1]; Invoke-WebRequest -UseBasicParsing -Headers @{ 'X-Workshop-Token' = $$t } "http://localhost:$(PIPELINE_PORT)/api/v1/workshop/report?tag=$(TAG)" -OutFile "$(TAG)-report.zip"; Write-Host "Saved $(TAG)-report.zip"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Docker — development (live reload)

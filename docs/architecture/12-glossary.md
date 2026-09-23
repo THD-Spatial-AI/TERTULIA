@@ -43,14 +43,14 @@ The act of sending a participant's persona data to feeedback_pipeline before the
 **Supabase Realtime**
 Supabase's WebSocket-based broadcast system. Used for syncing phase changes, slide index, participant presence, and reactions across all connected browsers.
 
-**feeedback_pipeline**
-The companion project at `C:\Users\user\Desktop\STORCITO\feeedback_pipeline`. Captures in-app feedback from Wildfire, processes it with local AI (Ollama), and creates GitHub issues. Receives pre-registered personas from the workshop platform.
+**feedback pipeline**
+The feedback half of Tertulia, now part of this repo at `pipeline/`. Captures in-app feedback from the target app, processes it with local AI (Ollama via n8n), and creates GitHub issues. Receives pre-registered personas from the workshop platform.
 
 **FeedbackOverlay**
-The React component from feeedback_pipeline (`frontend_overlay/src/FeedbackOverlay.tsx`) that wraps the Wildfire app root and provides the floating action button for in-app feedback.
+The React component from the feedback pipeline (`pipeline/overlay/src/FeedbackOverlay.tsx`) that wraps the target app root and provides the floating action button for in-app feedback.
 
 **session_token (pipeline)**
-Same concept as `session_token` in the workshop platform. When passed to Wildfire as a URL query param (`?session_token=...`), the FeedbackOverlay uses it to look up the pre-registered persona and skip the PersonaForm.
+Same concept as `session_token` in the workshop platform. When passed to the target app as a URL query param (`?tertulia_token=...` — see `redirectToWildfire` in `frontend/src/lib/utils.ts`), the FeedbackOverlay sends it with feedback so the backend attaches the pre-registered persona and the participant skips the PersonaForm.
 
 **Magic Link**
 Supabase Auth's passwordless email authentication. Facilitator enters email → receives a one-click login link → authenticated session established.

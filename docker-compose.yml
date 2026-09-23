@@ -116,6 +116,14 @@ services:
       AUTH_REALM:           ${AUTH_REALM:-tertulia}
       AUTH_INTERNAL_SECRET: ${AUTH_INTERNAL_SECRET:?AUTH_INTERNAL_SECRET is required}
       LOG_LEVEL:            ${LOG_LEVEL:-INFO}
+      # ── feedback pipeline handoff ──────────────────────────────────────────
+      # Reach the pipeline by its compose service name on the shared network,
+      # NOT the host-published port. PIPELINE_TOKEN is the single source of
+      # truth for the workshop token (== the pipeline's WORKSHOP_TOKEN == the
+      # overlay's workshopToken).
+      PIPELINE_API_URL:     http://feedback-pipeline:8000
+      PIPELINE_TOKEN:       ${PIPELINE_TOKEN:?PIPELINE_TOKEN is required}
+      WILDFIRE_BASE_URL:    ${WILDFIRE_BASE_URL:-https://wildfire.thd-spatial-ai.de}
     depends_on:
       postgres:
         condition: service_healthy
@@ -148,8 +156,87 @@ services:
     networks:
       - tertulia
 
+  # ── Feedback pipeline (was feeedback_pipeline/) ─────────────────────────────
+  # Local Ollama + n8n is the canonical, fully self-hosted inference path.
+  # On a machine without an NVIDIA GPU, layer the CPU override:
+  #   docker compose -f docker-compose.yml -f docker-compose.cpu.yml up -d
+  ollama:
+    image: ollama/ollama
+    container_name: tertulia-ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - tertulia-ollama-data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - tertulia
+
+  n8n:
+    image: n8nio/n8n
+    container_name: tertulia-n8n
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      N8N_HOST:     ${N8N_HOST:-localhost}
+      N8N_PORT:     "5678"
+      N8N_PROTOCOL: http
+      WEBHOOK_URL:  ${N8N_WEBHOOK_URL:-http://localhost:5678}
+      # Per-machine key (git-ignored). `make env` generates one. A shared key
+      # lets anyone decrypt n8n credentials, so compose fails fast if unset.
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?N8N_ENCRYPTION_KEY is not set — run `make env` or set it in .env}
+    volumes:
+      - tertulia-n8n-data:/home/node/.n8n
+    depends_on:
+      - ollama
+    networks:
+      - tertulia
+
+  feedback-pipeline:
+    build:
+      context: ./pipeline/backend
+      dockerfile: Dockerfile
+    image: tertulia-feedback-pipeline:latest
+    container_name: tertulia-feedback-pipeline
+    restart: unless-stopped
+    ports:
+      - "${PIPELINE_PORT:-9000}:8000"
+    environment:
+      # Canonical path is local Ollama via the n8n webhooks below. GROQ_API_KEY
+      # is an OPTIONAL cloud accelerator — leave it empty to stay self-hosted.
+      GROQ_API_KEY:            ${GROQ_API_KEY:-}
+      N8N_VISION_WEBHOOK_URL:  http://n8n:5678/webhook/vision
+      N8N_PROCESS_WEBHOOK_URL: http://n8n:5678/webhook/process
+      # WORKSHOP_TOKEN == PIPELINE_TOKEN (tertulia) == overlay workshopToken.
+      WORKSHOP_TOKEN:          ${PIPELINE_TOKEN:?PIPELINE_TOKEN is required}
+      GITHUB_TOKEN:            ${GITHUB_TOKEN:-}
+      GITHUB_REPO:             ${GITHUB_REPO:-THD-Spatial-AI/Storcito-Wildfire}
+      ALLOWED_ORIGINS:         ${PIPELINE_ALLOWED_ORIGINS:-https://wildfire-app.th-deg.de}
+      # Target app under test — drives the AI prompts (defaults keep Wildfire).
+      TARGET_APP_NAME:         ${TARGET_APP_NAME:-Wildfire App}
+      TARGET_APP_DESCRIPTION:  ${TARGET_APP_DESCRIPTION:-a geospatial wildfire risk simulation platform used by municipalities, firefighters, mayors, and emergency management professionals}
+    depends_on:
+      - n8n
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').getcode()==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - tertulia
+
 volumes:
   tertulia-postgres-data:
+  tertulia-ollama-data:
+  tertulia-n8n-data:
 
 networks:
   tertulia:

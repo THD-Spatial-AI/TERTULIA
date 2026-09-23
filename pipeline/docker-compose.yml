@@ -1,0 +1,62 @@
+# Phase 1 — workstation: Ollama + n8n + FastAPI all on localhost
+# Phase 2 — move feedback-pipeline + n8n to the university VM;
+#            keep only ollama here and expose it via Cloudflare Tunnel
+
+services:
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  n8n:
+    image: n8nio/n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678
+      # Read from the project-root .env (git-ignored, generated per machine by
+      # the installer). Never hardcode this — a shared key lets anyone decrypt
+      # n8n credentials. If unset, compose fails fast with the message below.
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:?N8N_ENCRYPTION_KEY is not set — run the installer, or copy .env.example to .env and set it}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  feedback-pipeline:
+    build: ./backend
+    ports:
+      - "9000:8000"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - n8n
+    restart: unless-stopped
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    ports:
+      - "9443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  n8n_data:
+  portainer_data:
