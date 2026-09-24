@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
 _docs_enabled = settings.enable_docs
 
 app = FastAPI(
-    title="Workshop Logic Platform API",
+    title="Tertulia API",
     version="0.1.0",
     lifespan=lifespan,
     docs_url="/docs" if _docs_enabled else None,
@@ -78,7 +78,7 @@ app.include_router(ws_router, prefix="/api/v1")
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "workshop-platform-api"}
+    return {"status": "ok", "service": "tertulia-api"}
 
 
 @app.get("/api/v1/me")

@@ -2,11 +2,11 @@
 
 ## System Context
 
-The Workshop Logic Platform sits at the center of a three-system ecosystem:
+Tertulia sits at the center of a three-system ecosystem:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Workshop Logic Platform                       │
+│                            Tertulia                              │
 │                                                                 │
 │   ┌──────────────┐         ┌──────────────────────────────┐    │
 │   │  Facilitator │         │   Participant (anonymous)    │    │

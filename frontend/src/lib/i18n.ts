@@ -23,7 +23,7 @@ const translations = {
       go_home: 'Zur Startseite',
     },
     nav: {
-      platform_title: 'Workshop Platform',
+      platform_title: 'Tertulia',
       language_label: 'Sprache',
       sign_out: 'Abmelden',
       dashboard: 'Dashboard',
@@ -374,7 +374,7 @@ const translations = {
       go_home: 'Go home',
     },
     nav: {
-      platform_title: 'Workshop Platform',
+      platform_title: 'Tertulia',
       language_label: 'Language',
       sign_out: 'Sign out',
       dashboard: 'Dashboard',
@@ -725,7 +725,7 @@ const translations = {
       go_home: 'Ir al inicio',
     },
     nav: {
-      platform_title: 'Plataforma de Talleres',
+      platform_title: 'Tertulia',
       language_label: 'Idioma',
       sign_out: 'Cerrar sesión',
       dashboard: 'Panel',
@@ -1076,7 +1076,7 @@ const translations = {
       go_home: 'Ir ao inicio',
     },
     nav: {
-      platform_title: 'Plataforma de Obradoiros',
+      platform_title: 'Tertulia',
       language_label: 'Idioma',
       sign_out: 'Pechar sesión',
       dashboard: 'Panel',

@@ -26,7 +26,7 @@ In the context of the Problem Board template: a "problem" is a pain point the pa
 A visual representation of the people and organizations a participant coordinates with during a wildfire event. Helps developers understand the ecosystem around the platform's users.
 
 **Workshop Tag**
-A human-readable identifier for a specific workshop event (e.g., `workshop-2026-munich`). Used to group all participant data and feedback from that event across the Workshop Platform, feeedback_pipeline, and Wildfire.
+A human-readable identifier for a specific workshop event (e.g., `workshop-2026-munich`). Used to group all participant data and feedback from that event across Tertulia, its feedback pipeline, and Wildfire.
 
 **Push Redirect**
 The facilitator-triggered action that simultaneously sends all connected participants to the Wildfire application URL, with their workshop identity pre-registered.

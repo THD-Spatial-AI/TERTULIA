@@ -3,7 +3,7 @@
 ## Level 1 — System Decomposition
 
 ```
-Workshop Logic Platform
+Tertulia
 ├── frontend/          React 19 SPA — participant and facilitator UI
 └── backend/           FastAPI — session management, pipeline integration
 ```

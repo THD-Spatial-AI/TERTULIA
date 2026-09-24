@@ -10,7 +10,7 @@
 | Scientist / Researcher | Universities, research institutions | Represents data quality and model validation perspective |
 | Academic | Universities (THD, UVigo, etc.) | Represents educational and methodological perspective |
 | Developer (THD Spatial AI) | THD Spatial AI | Consumes workshop outputs to guide Wildfire feature development |
-| feeedback_pipeline (automated system) | THD Spatial AI | Receives pre-registered personas to enrich in-app feedback |
+| Feedback pipeline (built-in, automated) | THD Spatial AI | Receives pre-registered personas and turns in-app feedback into GitHub issues |
 
 ## Objectives
 
@@ -33,7 +33,9 @@ Provide a structured, real-time collaborative environment for stakeholder co-des
 - Real-time participant reactions (emoji, raise hand)
 - 4 collaborative templates: Persona Card, User Flow, Problem/Opportunity Board, Stakeholder Map
 - Facilitator live progress monitoring (completion counts, individual submission view)
-- Wildfire launch with automatic persona pre-registration to feeedback_pipeline
+- Launch into the target app (Wildfire by default) with automatic persona pre-registration to the built-in feedback pipeline
+- In-app feedback capture (overlay) → AI-generated GitHub issues, with pre-attached persona
+- Workshop feedback report export (Markdown + PDF + Excel)
 - Multilingual interface (DE / EN / ES / GL)
 - Desktop and tablet responsive layout
 
@@ -43,6 +45,6 @@ Provide a structured, real-time collaborative environment for stakeholder co-des
 - Video/audio conferencing
 - Multi-workshop analytics dashboard
 - AI-assisted persona synthesis
-- PDF/Excel export of workshop outputs
+- PDF/Excel export of the co-design template outputs (personas/flows) — note: the feedback pipeline *does* export a workshop **feedback** report (MD/PDF/Excel)
 - Support for projects other than Wildfire (architecture supports it; UI for it is v2)
 - Mobile phone layout

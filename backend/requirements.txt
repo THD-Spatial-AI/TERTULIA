@@ -1,4 +1,4 @@
-# Workshop Logic Platform — Backend Dependencies
+# Tertulia — Backend Dependencies
 # Python 3.11+
 
 # Web framework

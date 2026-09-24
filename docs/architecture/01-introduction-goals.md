@@ -2,15 +2,25 @@
 
 ## Purpose
 
-The Workshop Logic Platform is a web-based collaborative environment developed by THD Spatial AI to support structured stakeholder co-design workshops around geospatial and AI-driven applications.
+**Tertulia** is a self-hosted web platform developed by THD Spatial AI that runs structured stakeholder co-design workshops **and** turns each session into structured product feedback. It is one project with two halves:
 
-Its first deployment targets the **Wildfire** platform — a geospatial wildfire risk simulation tool — bringing together domain experts (firefighters, mayors, scientists, academics) to collaboratively define personas, user flows, problem statements, and stakeholder maps.
+1. **Workshop** — a facilitator runs a real-time session where domain experts (firefighters, mayors, scientists, academics) collaboratively build personas, stakeholder maps, user flows, and problem maps.
+2. **Feedback pipeline** — when the workshop launches participants into the software under test, an in-app overlay captures their feedback and an AI agent files it as a structured GitHub issue, with each participant's persona already attached from the workshop.
 
-The platform acts as the orchestration layer between a workshop facilitation session and the development/feedback pipeline:
+Its first deployment targets the **Wildfire** platform — a geospatial wildfire risk simulation tool — but the feedback half is app-agnostic and can be pointed at any React app.
 
-1. Facilitator presents the platform context (slides phase)
-2. Stakeholders collaboratively fill structured templates (workshop phase)
-3. All participants are simultaneously redirected to the live platform (launch phase), with their identity pre-registered in the Feedback Pipeline
+### End-to-end flow
+
+```mermaid
+flowchart LR
+    A[Facilitator runs<br/>the workshop] --> B{{Launch}}
+    B -- "pre-register personas" --> C[(Feedback pipeline)]
+    B -- "redirect + tertulia_token" --> D[Target app + overlay]
+    D -- "feedback + persona" --> C
+    C -- "AI: local Ollama via n8n" --> E[[GitHub issue]]
+```
+
+The launch phase is the hinge: personas are pre-registered with the pipeline and a `tertulia_token` is carried into the target app so feedback is attributed to the right reporter without re-entry.
 
 ## Architectural Goals
 
@@ -19,7 +29,7 @@ The platform acts as the orchestration layer between a workshop facilitation ses
 | 1 | Real-time collaboration | All participants see live updates with < 500ms latency |
 | 2 | Zero friction for participants | No account creation, no installation, join by URL or QR code |
 | 3 | Facilitator control | Single facilitator drives the session pace and template unlocking |
-| 4 | Pipeline integration | Participant personas feed automatically into feeedback_pipeline |
+| 4 | Feedback integration | Participant personas feed automatically into the built-in feedback pipeline (`pipeline/`) |
 | 5 | Multilingual | Full DE / EN / ES / GL support from day one |
 | 6 | Tablet-first | Usable on tablets and laptops without horizontal scroll |
 | 7 | Self-hosted | Runs fully on-premise via Docker Compose; no third-party cloud or managed-service dependency |
@@ -31,7 +41,7 @@ The platform acts as the orchestration layer between a workshop facilitation ses
 | Workshop Facilitator (THD Spatial AI) | Creates and controls sessions; sees live participant progress |
 | Domain Expert Participant | Firefighter, mayor, scientist, academic — fills templates, provides real-world knowledge |
 | Developer (THD Spatial AI) | Consumes workshop outputs (personas, flows) for product decisions |
-| Feedback Pipeline (automated) | Receives pre-registered personas to enrich Wildfire feedback |
+| Feedback pipeline (built-in, automated) | Receives pre-registered personas and turns in-app feedback into GitHub issues |
 
 ## Quality Goals
 

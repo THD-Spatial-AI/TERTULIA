@@ -115,7 +115,7 @@ Note: Facilitator may skip templates (go directly from any template phase to lau
 ## Integration Data Flow
 
 ```
-Workshop Platform                  feeedback_pipeline
+Tertulia                           feedback pipeline
         │                                  │
         │  POST /api/v1/persona/            │
         │  pre-register                     │
