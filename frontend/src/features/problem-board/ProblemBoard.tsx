@@ -1,21 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { NavBar } from '@/components/layout/NavBar'
-import { Button } from '@/components/ui/Button'
-import { BroadcastBanner } from '@/components/ui/BroadcastBanner'
-import { WorkshopProgress } from '@/components/ui/WorkshopProgress'
+import { CanvasLayout } from '@/components/canvas/CanvasLayout'
+import { ChipPalette } from '@/components/canvas/ChipPalette'
 import { CompletedScreen } from '@/components/ui/CompletedScreen'
 import { t } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import { participantFetch } from '@/lib/api'
 import { useWorkshopChannel } from '@/lib/useWorkshopChannel'
 import { SectionCard, type CanvasSection } from './SectionCard'
-import { CanvasChipPalette } from './CanvasChipPalette'
+import { groupProblemChips } from './problemChips'
 import type { Session } from '@/types'
 
 const SECTION_IDS = ['context', 'goals', 'constraints', 'risks', 'quality', 'decisions'] as const
 
-// Full-width sections span both grid columns
+// Full-width sections span both grid columns on desktop
 const FULL_WIDTH = new Set(['context', 'decisions'])
 
 const DEFAULT_SECTIONS: CanvasSection[] = SECTION_IDS.map(id => ({
@@ -30,10 +29,11 @@ export function ProblemBoard() {
   const [chips, setChips] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [completed, setCompleted] = useState(false)
+  const [selectedChip, setSelectedChip] = useState<string | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const initialized = useRef(false)
 
-  const { broadcastMessage, dismissBroadcast } = useWorkshopChannel(slug)
+  const { broadcastMessage, dismissBroadcast, connected } = useWorkshopChannel(slug)
 
   useEffect(() => {
     if (!slug) return
@@ -64,10 +64,7 @@ export function ProblemBoard() {
   async function submit() {
     const empty = sections.filter(s => s.chips.length === 0 && s.notes.length === 0)
     if (empty.length > 0) {
-      toast.warning(
-        `${empty.length} section${empty.length > 1 ? 's are' : ' is'} still empty — you can still complete.`,
-        { duration: 4000 },
-      )
+      toast.warning(t('canvas.empty_sections', { count: empty.length }), { duration: 4000 })
     }
     setSaving(true)
     try {
@@ -123,71 +120,68 @@ export function ProblemBoard() {
     ))
   }
 
-  function onDragStart(e: React.DragEvent, label: string) {
-    e.dataTransfer.setData('application/chip-label', label)
-    e.dataTransfer.effectAllowed = 'move'
+  function pickChip(label: string) {
+    setSelectedChip(prev => (prev === label ? null : label))
+  }
+
+  function placeSelected(sectionId: string) {
+    if (!selectedChip) return
+    dropChip(sectionId, selectedChip)
+    setSelectedChip(null)
   }
 
   if (completed) {
     return (
       <CompletedScreen
-        message={t('problem_board.completed')}
+        activity="problem-board"
         broadcastMessage={broadcastMessage}
         onDismissBroadcast={dismissBroadcast}
+        connected={connected}
       />
     )
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-surface-faint">
-      <NavBar />
-      <BroadcastBanner message={broadcastMessage} onDismiss={dismissBroadcast} />
-      <WorkshopProgress />
-
-      <div className="flex min-h-0 flex-1">
-        <CanvasChipPalette chips={chips} onDragStart={onDragStart} />
-
-        <div className="flex min-h-0 flex-1 flex-col">
-          {/* Header */}
-          <div className="shrink-0 border-b border-border px-6 py-4">
-            <h1 className="text-xl font-bold text-ink">{t('problem_board.title')}</h1>
-            <p className="mt-0.5 text-sm text-ink-muted">{t('problem_board.description')}</p>
-          </div>
-
-          {/* Canvas — fills all remaining space, no scroll */}
-          <div className="min-h-0 flex-1 p-4">
-            <div className="grid h-full grid-cols-2 grid-rows-[1fr_2fr_2fr_1fr] gap-3">
-              {sections.map(section => (
-                <div
-                  key={section.id}
-                  className={FULL_WIDTH.has(section.id) ? 'col-span-2' : 'col-span-1'}
-                >
-                  <SectionCard
-                    section={section}
-                    title={t(`problem_board.section_${section.id}`)}
-                    hint={t(`problem_board.section_${section.id}_hint`)}
-                    onDropChip={chip => dropChip(section.id, chip)}
-                    onRemoveChip={(chip, i) => removeChip(section.id, chip, i)}
-                    onAddNote={() => addNote(section.id)}
-                    onUpdateNote={(noteId, text) => updateNote(section.id, noteId, text)}
-                    onRemoveNote={noteId => removeNote(section.id, noteId)}
-                  />
-                </div>
-              ))}
+    <CanvasLayout
+      title={t('problem_board.title')}
+      description={t('problem_board.description')}
+      submitLabel={t('problem_board.done_button')}
+      onSubmit={submit}
+      saving={saving}
+      broadcastMessage={broadcastMessage}
+      onDismissBroadcast={dismissBroadcast}
+      palette={
+        <ChipPalette
+          chips={chips}
+          group={groupProblemChips}
+          onPick={pickChip}
+          selected={selectedChip}
+          hint={t('canvas.board_tap_hint')}
+          emptyText={t('problem_board.chips_empty')}
+          customPlaceholder={t('problem_board.custom_chip_placeholder')}
+        />
+      }
+    >
+      <div className="h-full overflow-y-auto overscroll-contain p-3 sm:p-4">
+        <div className="grid gap-3 lg:grid-cols-2">
+          {sections.map(section => (
+            <div key={section.id} className={cn(FULL_WIDTH.has(section.id) ? 'min-h-40 lg:col-span-2' : 'min-h-56')}>
+              <SectionCard
+                section={section}
+                title={t(`problem_board.section_${section.id}`)}
+                hint={t(`problem_board.section_${section.id}_hint`)}
+                placing={selectedChip}
+                onPlace={() => placeSelected(section.id)}
+                onDropChip={chip => dropChip(section.id, chip)}
+                onRemoveChip={(chip, i) => removeChip(section.id, chip, i)}
+                onAddNote={() => addNote(section.id)}
+                onUpdateNote={(noteId, text) => updateNote(section.id, noteId, text)}
+                onRemoveNote={noteId => removeNote(section.id, noteId)}
+              />
             </div>
-          </div>
-
-          {/* Footer */}
-          <div className="shrink-0 flex items-center justify-between border-t border-border px-6 py-3">
-            <span className="text-xs text-ink-subtle">
-              {saving ? t('common.autosaving') : ''}
-            </span>
-            <Button size="lg" onClick={submit} loading={saving}>
-              {t('problem_board.done_button')}
-            </Button>
-          </div>
+          ))}
         </div>
       </div>
-    </div>
+    </CanvasLayout>
   )
 }

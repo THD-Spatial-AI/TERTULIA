@@ -1,30 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { NavBar } from '@/components/layout/NavBar'
-import { BroadcastBanner } from '@/components/ui/BroadcastBanner'
-import { WorkshopProgress } from '@/components/ui/WorkshopProgress'
+import { ParticipantHeader } from '@/components/layout/Headers'
 import { FloatingReactions } from '@/components/ui/FloatingReactions'
-import { t } from '@/lib/i18n'
+import { Flame, Heart, CircleHelp, Hand, type LucideIcon } from 'lucide-react'
+import { t, useLang } from '@/lib/i18n'
 import { useWorkshopChannel } from '@/lib/useWorkshopChannel'
+import { toEmbedUrl } from '@/lib/slides'
 import { getStoredParticipant } from '@/lib/utils'
 import type { ReactionKind } from '@/types'
 
-function toEmbedUrl(url: string): string {
-  const m = url.match(/\/presentation\/d\/([^/]+)/)
-  if (!m) return url
-  return `https://docs.google.com/presentation/d/${m[1]}/embed?start=false&loop=false&delayms=60000`
-}
 
-const REACTIONS: { kind: ReactionKind; label: string; emoji: string }[] = [
-  { kind: 'emoji_fire', label: t('slides.react_fire'), emoji: '🔥' },
-  { kind: 'emoji_heart', label: t('slides.react_heart'), emoji: '❤️' },
-  { kind: 'emoji_question', label: t('slides.react_question'), emoji: '❓' },
-  { kind: 'raise_hand', label: t('slides.raise_hand'), emoji: '✋' },
+const REACTIONS: { kind: ReactionKind; labelKey: string; Icon: LucideIcon }[] = [
+  { kind: 'emoji_fire', labelKey: 'slides.react_fire', Icon: Flame },
+  { kind: 'emoji_heart', labelKey: 'slides.react_heart', Icon: Heart },
+  { kind: 'emoji_question', labelKey: 'slides.react_question', Icon: CircleHelp },
+  { kind: 'raise_hand', labelKey: 'slides.raise_hand', Icon: Hand },
 ]
 
 interface ReactionEvent { id: number; kind: string; name: string }
 
 export function SlidesView() {
+  useLang()
   const { slug } = useParams<{ slug: string }>()
   const [slidesUrl, setSlidesUrl] = useState<string | null>(null)
   const [reactionEvents, setReactionEvents] = useState<ReactionEvent[]>([])
@@ -57,47 +53,49 @@ export function SlidesView() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface-faint">
-      <NavBar />
-      <BroadcastBanner message={broadcastMessage} onDismiss={dismissBroadcast} />
-      <WorkshopProgress />
+    <div className="flex min-h-screen flex-col bg-paper">
+      <ParticipantHeader broadcastMessage={broadcastMessage} onDismissBroadcast={dismissBroadcast} />
 
-      <div className="flex flex-1 flex-col">
-        <div className="flex-1">
-          {slidesUrl ? (
+      <main id="main" className="relative flex flex-1 flex-col px-3 pt-3 pb-24 sm:px-6 sm:pt-6">
+        {slidesUrl ? (
+          <div className="mx-auto w-full max-w-6xl flex-1 overflow-hidden rounded-xl border border-line bg-paper-raised">
             <iframe
               src={toEmbedUrl(slidesUrl)}
-              className="h-full w-full"
-              style={{ minHeight: 'calc(100vh - 10rem)' }}
+              className="block aspect-video h-auto w-full"
               allow="autoplay"
               sandbox="allow-scripts allow-same-origin allow-popups"
               referrerPolicy="no-referrer"
               title={t('slides.title')}
             />
-          ) : (
-            <div className="flex h-full items-center justify-center py-32">
-              <p className="text-sm text-ink-muted">{t('slides.waiting_for_facilitator')}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Reaction bar */}
-        <div className="border-t border-border bg-surface px-6 py-3">
-          <div className="mx-auto flex max-w-lg items-center justify-center gap-3">
-            {REACTIONS.map(({ kind, label, emoji }) => (
-              <button
-                key={kind}
-                onClick={() => sendReaction(kind)}
-                style={poppingButton === kind ? { animation: 'reaction-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1)' } : undefined}
-                className="flex items-center gap-1.5 rounded-full border border-border bg-surface-1 px-4 py-2 text-sm text-ink-muted transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 active:scale-95"
-              >
-                <span aria-hidden="true">{emoji}</span>
-                <span className="hidden sm:inline">{label}</span>
-              </button>
-            ))}
           </div>
+        ) : (
+          <div className="flex flex-1 items-center justify-center">
+            <p className="font-display text-title text-ink-muted">{t('slides.waiting_for_facilitator')}</p>
+          </div>
+        )}
+
+        {/* Reaction dock */}
+        <div
+          role="group"
+          aria-label={t('slides.reactions_label')}
+          className="fixed inset-x-0 bottom-4 z-30 mx-auto flex w-fit items-center gap-1 rounded-full border border-line bg-paper-raised/95 p-1.5 shadow-float backdrop-blur"
+          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          {REACTIONS.map(({ kind, labelKey, Icon }) => (
+            <button
+              key={kind}
+              type="button"
+              onClick={() => sendReaction(kind)}
+              aria-label={t(labelKey)}
+              style={poppingButton === kind ? { animation: 'reaction-pop 0.4s var(--ease-soft)' } : undefined}
+              className="group flex h-11 items-center gap-2 rounded-full px-3.5 text-sm text-ink-muted transition-colors hover:bg-paper-sunk hover:text-ink active:bg-clay-50 active:text-clay-700"
+            >
+              <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
+              <span className="hidden md:inline" aria-hidden="true">{t(labelKey)}</span>
+            </button>
+          ))}
         </div>
-      </div>
+      </main>
 
       <FloatingReactions events={reactionEvents} />
     </div>

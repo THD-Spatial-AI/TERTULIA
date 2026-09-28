@@ -13,12 +13,12 @@ import {
   type Edge,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { NavBar } from '@/components/layout/NavBar'
-import { Button } from '@/components/ui/Button'
-import { BroadcastBanner } from '@/components/ui/BroadcastBanner'
-import { WorkshopProgress } from '@/components/ui/WorkshopProgress'
+import { ChevronDown, X } from 'lucide-react'
+import { CanvasLayout } from '@/components/canvas/CanvasLayout'
+import { fieldCompact } from '@/components/ui/fieldStyles'
 import { CompletedScreen } from '@/components/ui/CompletedScreen'
 import { t } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import { participantFetch } from '@/lib/api'
 import { useWorkshopChannel } from '@/lib/useWorkshopChannel'
 import { RingBackground } from './RingBackground'
@@ -61,15 +61,13 @@ function groupByZone(all: string[]): Record<ZoneKey, string[]> {
 
 function RelLegend() {
   return (
-    <div className="pointer-events-none absolute bottom-4 right-4 rounded-xl border border-border bg-white/90 px-3 py-2.5 shadow-xs backdrop-blur-sm">
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-ink-subtle">
-        {t('stakeholder_map.legend_title')}
-      </p>
+    <div className="pointer-events-none absolute right-3 bottom-3 rounded-lg border border-line bg-paper-raised/90 px-3 py-2.5 backdrop-blur-sm">
+      <p className="mb-1.5 text-meta font-medium text-ink">{t('stakeholder_map.legend_title')}</p>
       <div className="space-y-1.5">
-        <LegendRow color="#cbd5e1" dash={false}  label={t('stakeholder_map.rel_relates')} />
-        <LegendRow color="#4a7c59" dash={false}  arrow label={t('stakeholder_map.rel_informs')} />
-        <LegendRow color="#64748b" thick         label={t('stakeholder_map.rel_institutional')} />
-        <LegendRow color="#ef4444" dash          label={t('stakeholder_map.rel_conflicts')} />
+        <LegendRow color="var(--color-line-strong)" label={t('stakeholder_map.rel_relates')} />
+        <LegendRow color="var(--color-sage-600)" arrow label={t('stakeholder_map.rel_informs')} />
+        <LegendRow color="var(--color-ink-muted)" thick label={t('stakeholder_map.rel_institutional')} />
+        <LegendRow color="var(--color-danger)" dash label={t('stakeholder_map.rel_conflicts')} />
       </div>
     </div>
   )
@@ -83,14 +81,14 @@ function LegendRow({ color, dash = false, thick = false, arrow = false, label }:
       <svg width="28" height="10" viewBox="0 0 28 10" fill="none" aria-hidden="true">
         <line
           x1="0" y1="5" x2={arrow ? '20' : '28'} y2="5"
-          stroke={color}
+          style={{ stroke: color }}
           strokeWidth={thick ? 2.5 : 1.5}
           strokeDasharray={dash ? '4 2' : undefined}
         />
         {arrow && (
           <polyline
             points="16,2 22,5 16,8"
-            stroke={color}
+            style={{ stroke: color }}
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -98,7 +96,7 @@ function LegendRow({ color, dash = false, thick = false, arrow = false, label }:
           />
         )}
       </svg>
-      <span className="text-[10px] text-ink-subtle">{label}</span>
+      <span className="text-[11px] text-ink-muted">{label}</span>
     </div>
   )
 }
@@ -109,9 +107,10 @@ interface InnerProps {
   slug: string | undefined
   broadcastMessage: string | null
   dismissBroadcast: () => void
+  connected: boolean
 }
 
-function StakeholderMapInner({ slug, broadcastMessage, dismissBroadcast }: InnerProps) {
+function StakeholderMapInner({ slug, broadcastMessage, dismissBroadcast, connected }: InnerProps) {
   const { screenToFlowPosition } = useReactFlow()
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
@@ -137,6 +136,7 @@ function StakeholderMapInner({ slug, broadcastMessage, dismissBroadcast }: Inner
   const [saving, setSaving] = useState(false)
   const [completed, setCompleted] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const canvasRef = useRef<HTMLDivElement>(null)
   const initialized = useRef(false)
 
   // Autosave
@@ -229,6 +229,19 @@ function StakeholderMapInner({ slug, broadcastMessage, dismissBroadcast }: Inner
     e.dataTransfer.effectAllowed = 'copy'
   }
 
+  function addNodeAt(name: string, position: { x: number; y: number }) {
+    setNodes(prev => [...prev, { id: crypto.randomUUID(), type: 'stakeholderNode', position, data: { name, role: '' } }])
+  }
+
+  // Tap / keyboard alternative to dragging: place near the middle of the map, then move it onto a ring.
+  function placeStakeholder(name: string) {
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const nudge = (nodes.length % 6) * 16
+    addNodeAt(name, screenToFlowPosition({ x: rect.left + rect.width / 2 + nudge, y: rect.top + rect.height / 2 + nudge }))
+    toast(t('canvas.added_to_canvas', { chip: name }), { duration: 1500 })
+  }
+
   function onDragOver(e: React.DragEvent) {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'copy'
@@ -238,14 +251,7 @@ function StakeholderMapInner({ slug, broadcastMessage, dismissBroadcast }: Inner
     e.preventDefault()
     const name = e.dataTransfer.getData('application/stakeholder-name')
     if (!name) return
-    const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY })
-    const newNode: Node = {
-      id: crypto.randomUUID(),
-      type: 'stakeholderNode',
-      position: pos,
-      data: { name, role: '' },
-    }
-    setNodes(prev => [...prev, newNode])
+    addNodeAt(name, screenToFlowPosition({ x: e.clientX, y: e.clientY }))
   }
 
   const onConnect = useCallback(
@@ -263,194 +269,163 @@ function StakeholderMapInner({ slug, broadcastMessage, dismissBroadcast }: Inner
   if (completed) {
     return (
       <CompletedScreen
-        message={t('stakeholder_map.completed')}
+        activity="stakeholder-map"
         broadcastMessage={broadcastMessage}
         onDismissBroadcast={dismissBroadcast}
+        connected={connected}
       />
     )
   }
 
-  return (
-    <div className="flex h-screen flex-col overflow-hidden bg-surface-faint">
-      <NavBar />
-      <BroadcastBanner message={broadcastMessage} onDismiss={dismissBroadcast} />
-      <WorkshopProgress />
+  const palette = (
+    <div className="flex min-h-full flex-col">
+      <div className="border-b border-line p-4">
+        <StepHeading n={1} title={t('stakeholder_map.use_case_label')} hint={t('stakeholder_map.use_case_hint')} htmlFor="use-case" />
+        <textarea
+          id="use-case"
+          value={useCase}
+          onChange={e => setUseCase(e.target.value)}
+          placeholder={t('stakeholder_map.use_case_placeholder')}
+          rows={4}
+          className={cn(fieldCompact, 'mt-3 resize-none')}
+        />
+      </div>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="flex flex-1 flex-col p-4">
+        <StepHeading n={2} title={t('stakeholder_map.stakeholders_label')} hint={t('stakeholder_map.stakeholders_hint')} htmlFor="new-stakeholder" />
 
-        {/* ── Left sidebar ──────────────────────────────────────────────── */}
-        <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-r border-border bg-white">
-
-          {/* Step 1 — Use Case */}
-          <div className="border-b border-border p-4">
-            <div className="mb-2 flex items-baseline gap-2">
-              <span className="text-2xl font-black text-border leading-none">1</span>
-              <div>
-                <p className="text-sm font-semibold text-ink">{t('stakeholder_map.use_case_label')}</p>
-                <p className="text-[11px] text-ink-subtle">{t('stakeholder_map.use_case_hint')}</p>
-              </div>
-            </div>
-            <textarea
-              value={useCase}
-              onChange={e => setUseCase(e.target.value)}
-              placeholder={t('stakeholder_map.use_case_placeholder')}
-              rows={4}
-              className="w-full resize-none rounded-lg border border-border bg-surface-faint px-3 py-2 text-xs text-ink placeholder:text-ink-subtle focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400/15"
-            />
-          </div>
-
-          {/* Step 2 — Stakeholders brainstorm */}
-          <div className="flex flex-1 flex-col p-4">
-            <div className="mb-3 flex items-baseline gap-2">
-              <span className="text-2xl font-black text-border leading-none">2</span>
-              <div>
-                <p className="text-sm font-semibold text-ink">{t('stakeholder_map.stakeholders_label')}</p>
-                <p className="text-[11px] text-ink-subtle">{t('stakeholder_map.stakeholders_hint')}</p>
-              </div>
-            </div>
-
-            {/* Add input */}
-            <div className="mb-3 flex gap-1.5">
-              <input
-                value={nameInput}
-                onChange={e => setNameInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addStakeholder())}
-                placeholder={t('stakeholder_map.add_stakeholder_placeholder')}
-                className="min-w-0 flex-1 rounded-lg border border-border bg-surface-faint px-3 py-1.5 text-xs text-ink placeholder:text-ink-subtle focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400/15"
-              />
-              <button
-                onClick={addStakeholder}
-                disabled={!nameInput.trim()}
-                className="rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:border-brand-400 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {t('stakeholder_map.add_stakeholder_button')}
-              </button>
-            </div>
-
-            {/* Stakeholder list — grouped by ring zone */}
-            {stakeholders.length === 0 ? (
-              <p className="py-4 text-center text-[11px] text-ink-subtle">
-                {t('stakeholder_map.stakeholders_empty')}
-              </p>
-            ) : (
-              <div className="flex-1 space-y-1 overflow-y-auto">
-                {ZONE_DEFS.map(({ key, labelKey }) => {
-                  const items = groupedStakeholders[key]
-                  if (items.length === 0) return null
-                  const isCollapsed = collapsedZones.has(key)
-                  const label = key === 'other' ? t('stakeholder_map.ring_other') : t(labelKey as Parameters<typeof t>[0])
-                  return (
-                    <div key={key}>
-                      <button
-                        type="button"
-                        onClick={() => toggleZone(key)}
-                        className="flex w-full items-center justify-between rounded-md px-1 py-1 text-left transition-colors hover:bg-surface-faint"
-                      >
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-subtle">
-                          {label}
-                        </span>
-                        <svg
-                          className={`h-3 w-3 text-ink-subtle transition-transform ${isCollapsed ? '-rotate-90' : ''}`}
-                          viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
-                        >
-                          <path d="M2 4l4 4 4-4" />
-                        </svg>
-                      </button>
-
-                      {!isCollapsed && (
-                        <div className="mb-1 mt-0.5 grid grid-cols-2 gap-1">
-                          {items.map(name => (
-                            <div
-                              key={name}
-                              draggable
-                              onDragStart={e => onDragStart(e, name)}
-                              className="group relative flex min-h-[36px] cursor-grab select-none items-center rounded-lg border border-border bg-surface-faint px-2 py-1.5 transition-colors hover:border-brand-300 hover:bg-brand-50 active:cursor-grabbing"
-                            >
-                              <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink">
-                                {name}
-                              </span>
-                              <button
-                                onMouseDown={e => { e.stopPropagation(); removeStakeholder(name) }}
-                                className="absolute right-1 top-1 opacity-0 transition-opacity group-hover:opacity-100 text-ink-subtle hover:text-error"
-                                title="Remove"
-                              >
-                                <svg className="h-2.5 w-2.5" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                                  <path d="M2 2l6 6M8 2l-6 6" />
-                                </svg>
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {stakeholders.length > 0 && (
-              <p className="mt-2 text-[10px] text-ink-subtle">{t('stakeholder_map.drag_hint')}</p>
-            )}
-          </div>
-        </aside>
-
-        {/* ── Canvas + findings column ──────────────────────────────────── */}
-        <div className="flex min-h-0 flex-1 flex-col">
-
-          {/* Ring canvas */}
-          <div
-            className="relative min-h-0 flex-1"
-            onDragOver={onDragOver}
-            onDrop={onDrop}
+        <form className="mt-3 mb-4 flex gap-1.5" onSubmit={e => { e.preventDefault(); addStakeholder() }}>
+          <input
+            id="new-stakeholder"
+            autoComplete="off"
+            value={nameInput}
+            onChange={e => setNameInput(e.target.value)}
+            placeholder={t('stakeholder_map.add_stakeholder_placeholder')}
+            className={cn(fieldCompact, 'min-w-0 flex-1')}
+          />
+          <button
+            type="submit"
+            disabled={!nameInput.trim()}
+            className="rounded-md border border-line-strong bg-paper-raised px-3 text-xs font-medium text-ink transition-colors hover:bg-paper-sunk disabled:opacity-40"
           >
-            <RingBackground />
+            {t('stakeholder_map.add_stakeholder_button')}
+          </button>
+        </form>
 
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={nodeTypes}
-              edgeTypes={edgeTypes}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              deleteKeyCode="Delete"
-              defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-              fitView={false}
-              className="absolute inset-0"
-              style={{ background: 'transparent' }}
-              proOptions={{ hideAttribution: true }}
+        {stakeholders.length === 0 ? (
+          <p className="py-4 text-center text-meta text-ink-subtle">{t('stakeholder_map.stakeholders_empty')}</p>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-meta text-ink-muted">{t('stakeholder_map.tap_hint')}</p>
+            {ZONE_DEFS.map(({ key, labelKey }) => {
+              const items = groupedStakeholders[key]
+              if (items.length === 0) return null
+              const isCollapsed = collapsedZones.has(key)
+              const label = key === 'other' ? t('stakeholder_map.ring_other') : t(labelKey)
+              return (
+                <section key={key}>
+                  <button
+                    type="button"
+                    onClick={() => toggleZone(key)}
+                    aria-expanded={!isCollapsed}
+                    className="flex w-full items-center justify-between py-1 text-left text-sm font-medium text-ink transition-colors hover:text-clay-700"
+                  >
+                    {label}
+                    <ChevronDown className={cn('h-4 w-4 text-ink-subtle transition-transform duration-200', isCollapsed && '-rotate-90')} aria-hidden="true" />
+                  </button>
+
+                  {!isCollapsed && (
+                    <ul className="mt-2 flex flex-wrap gap-1.5 md:grid md:grid-cols-2">
+                      {items.map(name => (
+                        <li key={name} className="flex min-w-0 items-stretch rounded-md border border-line bg-paper-raised transition-colors hover:border-line-strong">
+                          <button
+                            type="button"
+                            draggable
+                            onDragStart={e => onDragStart(e, name)}
+                            onClick={() => placeStakeholder(name)}
+                            title={name}
+                            className="min-h-9 min-w-0 flex-1 cursor-grab px-2.5 py-1.5 text-left text-xs leading-tight text-ink select-none active:cursor-grabbing"
+                          >
+                            <span className="line-clamp-2">{name}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeStakeholder(name)}
+                            aria-label={t('stakeholder_map.remove_stakeholder', { name })}
+                            className="inline-flex w-6 shrink-0 items-center justify-center rounded-r-md text-ink-subtle transition-colors hover:bg-danger-bg hover:text-danger"
+                          >
+                            <X className="h-3 w-3" aria-hidden="true" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  return (
+    <CanvasLayout
+      title={t('stakeholder_map.title')}
+      description={t('stakeholder_map.description')}
+      submitLabel={t('stakeholder_map.done_button')}
+      onSubmit={submit}
+      saving={saving}
+      broadcastMessage={broadcastMessage}
+      onDismissBroadcast={dismissBroadcast}
+      palette={palette}
+    >
+      <div className="flex h-full flex-col">
+        <div ref={canvasRef} className="relative min-h-0 flex-1" onDragOver={onDragOver} onDrop={onDrop}>
+          <RingBackground />
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            deleteKeyCode="Delete"
+            defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+            fitView={false}
+            className="tertulia-flow absolute inset-0"
+            style={{ background: 'transparent' }}
+            proOptions={{ hideAttribution: true }}
+          />
+          <RelLegend />
+        </div>
+
+        <div className="shrink-0 border-t border-line bg-paper-raised px-4 py-3 sm:px-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-4">
+            <StepHeading n={5} title={t('stakeholder_map.findings_label')} htmlFor="findings" />
+            <textarea
+              id="findings"
+              value={findings}
+              onChange={e => setFindings(e.target.value)}
+              placeholder={t('stakeholder_map.findings_placeholder')}
+              rows={2}
+              className={cn(fieldCompact, 'min-w-0 flex-1 resize-none')}
             />
-
-            <RelLegend />
-          </div>
-
-          {/* Step 5 — Findings */}
-          <div className="shrink-0 border-t border-border bg-white">
-            <div className="flex items-start gap-3 px-5 py-3">
-              <div className="flex shrink-0 items-baseline gap-2 pt-0.5">
-                <span className="text-2xl font-black text-border leading-none">5</span>
-                <p className="text-sm font-semibold text-ink">{t('stakeholder_map.findings_label')}</p>
-              </div>
-              <textarea
-                value={findings}
-                onChange={e => setFindings(e.target.value)}
-                placeholder={t('stakeholder_map.findings_placeholder')}
-                rows={2}
-                className="min-w-0 flex-1 resize-none rounded-lg border border-border bg-surface-faint px-3 py-2 text-xs text-ink placeholder:text-ink-subtle focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400/15"
-              />
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="shrink-0 flex items-center justify-between border-t border-border px-6 py-3">
-            <span className="text-xs text-ink-subtle">
-              {saving ? t('common.autosaving') : ''}
-            </span>
-            <Button size="lg" onClick={submit} loading={saving}>
-              {t('stakeholder_map.done_button')}
-            </Button>
           </div>
         </div>
+      </div>
+    </CanvasLayout>
+  )
+}
+
+function StepHeading({ n, title, hint, htmlFor }: { n: number; title: string; hint?: string; htmlFor: string }) {
+  return (
+    <div className="flex shrink-0 items-baseline gap-2.5">
+      <span className="font-display text-2xl leading-none text-clay-600" aria-hidden="true">{n}</span>
+      <div>
+        <label htmlFor={htmlFor} className="text-sm font-semibold text-ink">{title}</label>
+        {hint && <p className="text-meta text-ink-subtle">{hint}</p>}
       </div>
     </div>
   )
@@ -460,7 +435,7 @@ function StakeholderMapInner({ slug, broadcastMessage, dismissBroadcast }: Inner
 
 export function StakeholderMap() {
   const { slug } = useParams<{ slug: string }>()
-  const { broadcastMessage, dismissBroadcast } = useWorkshopChannel(slug)
+  const { broadcastMessage, dismissBroadcast, connected } = useWorkshopChannel(slug)
 
   return (
     <ReactFlowProvider>
@@ -468,6 +443,7 @@ export function StakeholderMap() {
         slug={slug}
         broadcastMessage={broadcastMessage}
         dismissBroadcast={dismissBroadcast}
+        connected={connected}
       />
     </ReactFlowProvider>
   )

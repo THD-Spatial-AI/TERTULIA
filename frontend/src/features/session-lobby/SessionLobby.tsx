@@ -1,22 +1,34 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { NavBar } from '@/components/layout/NavBar'
+import { MinimalHeader } from '@/components/layout/Headers'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
-import { t } from '@/lib/i18n'
+import { Field } from '@/components/ui/Field'
+import { t, useLang } from '@/lib/i18n'
 import { storeSessionToken, storeParticipant } from '@/lib/utils'
 
 const API = ''
 
+const STEPS = ['session_lobby.feature_persona', 'session_lobby.feature_flow', 'session_lobby.feature_launch']
+
 export function SessionLobby() {
+  useLang()
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [role, setRole] = useState('')
   const [org, setOrg] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sessionTitle, setSessionTitle] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!slug) return
+    fetch(`${API}/api/v1/sessions/${slug}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(s => { if (typeof s?.title === 'string') setSessionTitle(s.title) })
+      .catch(() => {})
+  }, [slug])
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault()
@@ -50,133 +62,93 @@ export function SessionLobby() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-brand-950">
-      <NavBar />
+    <div className="flex min-h-screen flex-col bg-paper">
+      <MinimalHeader />
 
-      {/* Split-screen body */}
-      <div className="flex flex-1 flex-col lg:flex-row">
-
-        {/* Left — dark hero panel */}
-        <div className="relative flex flex-col justify-between overflow-hidden px-8 py-12 lg:w-[44%] lg:px-12 lg:py-16">
-          {/* Decorative grid lines */}
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage: `
-                linear-gradient(oklch(1 0 0) 1px, transparent 1px),
-                linear-gradient(90deg, oklch(1 0 0) 1px, transparent 1px)
-              `,
-              backgroundSize: '48px 48px',
-            }}
-            aria-hidden="true"
-          />
-          {/* Accent glow */}
-          <div
-            className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl"
-            style={{ background: 'oklch(0.480 0.178 290 / 0.18)' }}
-            aria-hidden="true"
-          />
-
-          {/* Workshop identity */}
-          <div className="relative">
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-brand-700/60 bg-brand-900/60 px-3 py-1.5 text-xs font-medium text-brand-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-fire-500 animate-pulse" aria-hidden="true" />
-              Live session
-            </div>
-
-            <h1 className="text-3xl font-bold tracking-tight text-white lg:text-4xl" style={{ textWrap: 'balance' }}>
-              {t('session_lobby.hero_heading')}
+      <main id="main" className="flex-1">
+        <div className="mx-auto grid max-w-6xl gap-x-20 gap-y-12 px-4 py-12 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:py-24">
+          {/* Who's hosting and why */}
+          <div className="lg:col-start-1 lg:row-start-1" style={{ animation: 'rise-in 400ms var(--ease-soft) both' }}>
+            <p className="font-mono text-meta text-ink-subtle" translate="no">{slug}</p>
+            <h1 className="mt-4 font-display text-display text-ink">
+              {sessionTitle ?? t('session_lobby.hero_heading')}
             </h1>
-            <p className="mt-4 text-base text-brand-400 leading-relaxed" style={{ textWrap: 'pretty' }}>
+            <p className="mt-5 max-w-xl text-[1.0625rem] leading-relaxed text-ink-muted">
               {t('session_lobby.hero_body')}
             </p>
+          </div>
 
-            {/* Feature pills */}
-            <ul className="mt-8 space-y-3" aria-label="Session features">
-              {[
-                { icon: '◈', text: t('session_lobby.feature_persona') },
-                { icon: '⟶', text: t('session_lobby.feature_flow') },
-                { icon: '◉', text: t('session_lobby.feature_launch') },
-              ].map(({ icon, text }) => (
-                <li key={text} className="flex items-center gap-3 text-sm text-brand-300">
-                  <span className="font-mono text-brand-500 w-4 text-center" aria-hidden="true">{icon}</span>
-                  {text}
+          {/* What will happen */}
+          <section className="order-3 lg:order-none lg:col-start-1 lg:row-start-2" aria-labelledby="steps-heading">
+            <h2 id="steps-heading" className="text-heading font-semibold text-ink">{t('session_lobby.steps_heading')}</h2>
+            <ol className="mt-4 divide-y divide-line border-y border-line">
+              {STEPS.map((key, i) => (
+                <li key={key} className="flex items-baseline gap-5 py-4">
+                  <span className="w-5 shrink-0 font-display text-2xl leading-none text-clay-600 tabular-nums" aria-hidden="true">
+                    {i + 1}
+                  </span>
+                  <span className="text-[0.9375rem] text-ink">{t(key)}</span>
                 </li>
               ))}
-            </ul>
-          </div>
+            </ol>
+          </section>
 
-          {/* Bottom session tag */}
-          <div className="relative mt-12">
-            <p className="text-xs font-mono text-brand-600 uppercase tracking-widest">
-              session
-            </p>
-            <p className="mt-1 font-mono text-sm text-brand-400 truncate">
-              {slug ?? '—'}
-            </p>
-          </div>
+          {/* Join */}
+          <section
+            className="order-2 lg:order-none lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-center"
+            aria-labelledby="join-heading"
+            style={{ animation: 'rise-in 400ms var(--ease-soft) 80ms both' }}
+          >
+            <div className="rounded-xl border border-line bg-paper-raised p-6 sm:p-8">
+              <h2 id="join-heading" className="font-display text-title text-ink">{t('session_lobby.form_heading')}</h2>
+              <p className="mt-1.5 text-sm text-ink-muted">{t('session_lobby.form_subheading')}</p>
+
+              <form onSubmit={handleJoin} className="mt-7 space-y-5">
+                <Field label={t('session_lobby.name_label')}>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder={t('session_lobby.name_placeholder')}
+                    autoComplete="name"
+                    required
+                  />
+                </Field>
+
+                <Field label={t('session_lobby.role_label')}>
+                  <Input
+                    id="role"
+                    name="role"
+                    value={role}
+                    onChange={e => setRole(e.target.value)}
+                    placeholder={t('session_lobby.role_placeholder')}
+                    autoComplete="organization-title"
+                    required
+                  />
+                </Field>
+
+                <Field label={t('session_lobby.org_label')} optional>
+                  <Input
+                    id="org"
+                    name="organization"
+                    value={org}
+                    onChange={e => setOrg(e.target.value)}
+                    placeholder={t('session_lobby.org_placeholder')}
+                    autoComplete="organization"
+                  />
+                </Field>
+
+                <Button type="submit" className="w-full" size="lg" loading={loading}>
+                  {t('session_lobby.join_button')}
+                </Button>
+              </form>
+
+              <p className="mt-5 text-meta text-ink-subtle">{t('session_lobby.privacy_note')}</p>
+            </div>
+          </section>
         </div>
-
-        {/* Right — join form */}
-        <div className="flex flex-1 items-center justify-center bg-surface px-8 py-12 lg:px-16">
-          <div className="w-full max-w-sm">
-            <h2 className="text-xl font-semibold text-ink">
-              {t('session_lobby.form_heading')}
-            </h2>
-            <p className="mt-1 text-sm text-ink-muted">
-              {t('session_lobby.form_subheading')}
-            </p>
-
-            <form onSubmit={handleJoin} className="mt-8 space-y-5">
-              <div className="space-y-1.5">
-                <Label htmlFor="name">{t('session_lobby.name_label')}</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder={t('session_lobby.name_placeholder')}
-                  autoComplete="given-name"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="role">{t('session_lobby.role_label')}</Label>
-                <Input
-                  id="role"
-                  value={role}
-                  onChange={e => setRole(e.target.value)}
-                  placeholder={t('session_lobby.role_placeholder')}
-                  autoComplete="organization-title"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="org">
-                  {t('session_lobby.org_label')}
-                  <span className="ml-1 text-xs text-ink-subtle font-normal">({t('common.optional')})</span>
-                </Label>
-                <Input
-                  id="org"
-                  value={org}
-                  onChange={e => setOrg(e.target.value)}
-                  placeholder={t('session_lobby.org_placeholder')}
-                  autoComplete="organization"
-                />
-              </div>
-
-              <Button type="submit" className="w-full" size="lg" loading={loading}>
-                {t('session_lobby.join_button')}
-              </Button>
-            </form>
-
-            <p className="mt-6 text-center text-xs text-ink-subtle">
-              {t('session_lobby.privacy_note')}
-            </p>
-          </div>
-        </div>
-      </div>
+      </main>
     </div>
   )
 }

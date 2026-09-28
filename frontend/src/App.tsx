@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 
@@ -16,6 +17,8 @@ import { ProblemBoard } from '@/features/problem-board/ProblemBoard'
 import { StakeholderMap } from '@/features/stakeholder-map/StakeholderMap'
 import { LaunchScreen } from '@/features/launch/LaunchScreen'
 import { NotFound } from '@/components/layout/NotFound'
+
+const KitchenSink = import.meta.env.DEV ? lazy(() => import('@/features/dev/KitchenSink')) : null
 
 function AppShell() {
   useLang()
@@ -41,6 +44,10 @@ function AppShell() {
       <Route path="/session/:slug/stakeholder-map" element={<StakeholderMap />} />
       <Route path="/session/:slug/launching" element={<LaunchScreen />} />
 
+      {KitchenSink && (
+        <Route path="/dev/kitchen-sink" element={<Suspense fallback={null}><KitchenSink /></Suspense>} />
+      )}
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   )
@@ -49,7 +56,17 @@ function AppShell() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Toaster position="top-center" richColors />
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          classNames: {
+            toast: '!rounded-lg !border !border-line !bg-paper-raised !text-ink !shadow-float !font-sans',
+            description: '!text-ink-muted',
+            error: '!border-danger/40 [&_[data-icon]]:!text-danger',
+            success: '[&_[data-icon]]:!text-success',
+          },
+        }}
+      />
       <AppShell />
     </BrowserRouter>
   )

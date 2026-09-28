@@ -61,17 +61,28 @@ def has_session_cookie(request: Request) -> bool:
 
 
 def _parse_realm_user(payload: Any) -> RealmUser:
+    """Map the Go auth-service's internal identity into a RealmUser.
+
+    The auth-service returns {id, email, name, access_level, group_id} and does
+    NOT echo the Keycloak realm or role list. Sessions are only ever issued for
+    the configured realm, and only workshop staff have Keycloak accounts
+    (participants are anonymous, authenticated by session_token) — so any
+    validated session is treated as a facilitator.
+    """
     if not isinstance(payload, dict):
         raise ValueError("invalid user response")
     user_id  = str(payload.get("id") or "").strip()
-    username = str(payload.get("username") or "").strip()
     email    = str(payload.get("email") or "").strip().lower()
-    realm    = str(payload.get("realm") or "").strip()
-    raw_roles = payload.get("roles")
-    if not user_id or not username or not email or realm != settings.auth_realm or not isinstance(raw_roles, list):
+    username = str(payload.get("username") or payload.get("name") or email).strip()
+    if not user_id or not email:
         raise ValueError("invalid realm identity")
-    roles = frozenset(str(r) for r in raw_roles if str(r) in _ALLOWED_ROLES)
-    return RealmUser(id=user_id, username=username, email=email, realm=realm, roles=roles)
+    return RealmUser(
+        id=user_id,
+        username=username or email,
+        email=email,
+        realm=settings.auth_realm,
+        roles=frozenset({"facilitator"}),
+    )
 
 
 async def validate_request_session(request: Request) -> RealmUser | None:

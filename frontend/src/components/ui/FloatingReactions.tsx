@@ -68,12 +68,12 @@ export function FloatingReactions({ events }: FloatingReactionsProps) {
           }}
         >
           <span
-            className={`leading-none drop-shadow-xl ${SIZE[bubble.kind] ?? 'text-4xl'}`}
-            style={{ filter: 'drop-shadow(0 4px 12px oklch(0 0 0 / 0.4))' }}
+            className={`leading-none ${SIZE[bubble.kind] ?? 'text-4xl'}`}
+            
           >
             {EMOJI[bubble.kind] ?? '💬'}
           </span>
-          <span className="whitespace-nowrap rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
+          <span className="max-w-40 truncate whitespace-nowrap rounded-full bg-ink/85 px-2.5 py-1 text-xs font-medium text-paper">
             {bubble.name}
           </span>
         </div>

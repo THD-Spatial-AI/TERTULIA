@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { NavBar } from '@/components/layout/NavBar'
-import { Button } from '@/components/ui/Button'
+import { FacilitatorHeader } from '@/components/layout/Headers'
+import { ChevronDown, RotateCcw, X } from 'lucide-react'
+import { Button, buttonClasses } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
-import { t } from '@/lib/i18n'
+import { Field } from '@/components/ui/Field'
+import { t, useLang } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import { apiFetch } from '@/lib/api'
 import { WILDFIRE_TEMPLATE } from './wildfire-template'
 import type { Session } from '@/types'
@@ -21,6 +23,9 @@ function slugify(text: string) {
 // ── Chip list (reusable within this file) ────────────────────────────────────
 
 interface ChipListProps {
+  id: string
+  label: string
+  hint: string
   chips: string[]
   inputValue: string
   placeholder: string
@@ -28,43 +33,61 @@ interface ChipListProps {
   onInputChange: (v: string) => void
   onAdd: () => void
   onRemove: (chip: string) => void
+  onReset: () => void
+  children?: React.ReactNode
 }
 
-function ChipList({ chips, inputValue, placeholder, addLabel, onInputChange, onAdd, onRemove }: ChipListProps) {
+function ChipList({ id, label, hint, chips, inputValue, placeholder, addLabel, onInputChange, onAdd, onRemove, onReset, children }: ChipListProps) {
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <label htmlFor={id} className="text-sm font-medium text-ink">{label}</label>
+          <p id={`${id}-hint`} className="mt-0.5 text-meta text-ink-subtle">{hint}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onReset}
+          className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-meta font-medium text-ink-muted transition-colors hover:bg-paper-sunk hover:text-ink"
+        >
+          <RotateCcw className="h-3 w-3" aria-hidden="true" />
+          {t('facilitator.reset_to_wildfire')}
+        </button>
+      </div>
+
+      {children}
+
       <div className="flex gap-2">
         <Input
+          id={id}
+          name={id}
+          autoComplete="off"
+          aria-describedby={`${id}-hint`}
           value={inputValue}
           onChange={e => onInputChange(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), onAdd())}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onAdd() } }}
           placeholder={placeholder}
         />
-        <Button type="button" variant="outline" onClick={onAdd} disabled={!inputValue.trim()}>
+        <Button type="button" variant="secondary" onClick={onAdd} disabled={!inputValue.trim()} className="shrink-0">
           {addLabel}
         </Button>
       </div>
       {chips.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <ul className="flex flex-wrap gap-1.5">
           {chips.map(chip => (
-            <span
-              key={chip}
-              className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 py-1 pl-3 pr-2 text-sm font-medium text-brand-800"
-            >
+            <li key={chip} className="inline-flex items-center gap-0.5 rounded-md border border-line-strong bg-paper-raised py-0.5 pr-0.5 pl-2.5 text-sm text-ink">
               {chip}
               <button
                 type="button"
                 onClick={() => onRemove(chip)}
-                className="text-brand-400 transition-colors hover:text-error"
-                aria-label={`Remove ${chip}`}
+                aria-label={t('create.remove_chip', { chip })}
+                className="inline-flex h-6 w-6 items-center justify-center rounded text-ink-subtle transition-colors hover:bg-danger-bg hover:text-danger"
               >
-                <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M4 4l8 8M12 4l-8 8" />
-                </svg>
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
-            </span>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   )
@@ -77,103 +100,58 @@ function WildfireTemplateCard({ onLoad }: { onLoad: () => void }) {
   const tpl = WILDFIRE_TEMPLATE
 
   return (
-    <div className="overflow-hidden rounded-xl border border-brand-200 bg-brand-50/40">
-      {/* Header */}
-      <div className="flex items-start gap-4 p-5">
-        {/* Icon */}
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-xl">
-          🌲
-        </div>
-
-        {/* Info */}
+    <div className="overflow-hidden rounded-xl border border-line-strong bg-paper-raised">
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-4 p-5 sm:p-6">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-semibold text-ink">{tpl.title}</h3>
-            <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700">
-              Wildfire
-            </span>
-          </div>
-          <p className="mt-0.5 text-xs text-ink-muted">{tpl.description}</p>
-
-          {/* Stats row */}
-          <div className="mt-2 flex flex-wrap gap-3">
-            <Stat n={tpl.userFlowChips.length} label={t('facilitator.template_preview_flow_steps')} />
-            <Stat n={tpl.canvasChips.length} label={t('facilitator.template_preview_canvas_chips')} />
-            <Stat n={tpl.stakeholderSuggestions.length} label={t('facilitator.template_preview_stakeholders')} />
-            <Stat n={tpl.useCases.length} label={t('facilitator.template_preview_use_cases')} />
-          </div>
+          <span className="mb-3 block h-0.5 w-8 rounded-full bg-clay-600" aria-hidden="true" />
+          <h3 className="font-display text-2xl leading-tight text-ink">{tpl.title}</h3>
+          <p className="mt-1 text-sm text-ink-muted">{tpl.description}</p>
+          <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-meta text-ink-subtle tabular-nums">
+            <span>{tpl.userFlowChips.length} {t('facilitator.template_preview_flow_steps')}</span>
+            <span>{tpl.canvasChips.length} {t('facilitator.template_preview_canvas_chips')}</span>
+            <span>{tpl.stakeholderSuggestions.length} {t('facilitator.template_preview_stakeholders')}</span>
+            <span>{tpl.useCases.length} {t('facilitator.template_preview_use_cases')}</span>
+          </p>
         </div>
-
-        {/* Actions */}
         <div className="flex shrink-0 flex-col items-end gap-2">
-          <Button size="sm" onClick={onLoad}>
-            {t('facilitator.template_wildfire_load')}
-          </Button>
+          <Button onClick={onLoad}>{t('facilitator.template_wildfire_load')}</Button>
           <button
             type="button"
             onClick={() => setExpanded(v => !v)}
-            className="text-xs text-ink-subtle hover:text-ink"
+            aria-expanded={expanded}
+            aria-controls="template-details"
+            className="inline-flex items-center gap-1 text-meta text-ink-muted transition-colors hover:text-ink"
           >
             {expanded ? t('facilitator.template_preview_hide') : t('facilitator.template_preview_show')}
+            <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-200', expanded && 'rotate-180')} aria-hidden="true" />
           </button>
         </div>
       </div>
 
-      {/* Expandable details */}
       {expanded && (
-        <div className="border-t border-brand-100 bg-white px-5 py-4 space-y-5">
-
-          {/* Use cases */}
+        <div id="template-details" className="space-y-6 border-t border-line bg-paper px-5 py-5 sm:px-6">
           <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
-              {t('facilitator.template_preview_use_cases_label')}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
+            <h4 className="mb-2 text-sm font-medium text-ink">{t('facilitator.template_preview_use_cases_label')}</h4>
+            <div className="grid gap-2 sm:grid-cols-2">
               {tpl.useCases.map((uc, i) => (
-                <div key={i} className="rounded-lg border border-border bg-surface-faint p-3">
-                  <p className="text-xs font-semibold text-ink">{uc.title}</p>
-                  <p className="mt-0.5 text-[11px] leading-snug text-ink-muted">{uc.description}</p>
+                <div key={i} className="rounded-md border border-line bg-paper-raised p-3">
+                  <p className="text-sm font-medium text-ink">{uc.title}</p>
+                  <p className="mt-0.5 text-meta text-ink-muted">{uc.description}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Stakeholders preview */}
           <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
-              {t('facilitator.template_preview_stakeholders_label')} ({tpl.stakeholderSuggestions.length})
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {tpl.stakeholderSuggestions.map(s => (
-                <span key={s} className="rounded-full border border-border bg-white px-2.5 py-0.5 text-xs text-ink-muted">
-                  {s}
-                </span>
-              ))}
-            </div>
+            <h4 className="mb-2 text-sm font-medium text-ink">
+              {t('facilitator.template_preview_stakeholders_label')} <span className="font-normal text-ink-subtle">{tpl.stakeholderSuggestions.length}</span>
+            </h4>
+            <p className="text-meta leading-relaxed text-ink-muted">{tpl.stakeholderSuggestions.join(' · ')}</p>
           </div>
 
-          {/* Chips preview */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
-                {t('facilitator.template_preview_flow_chips_label')} ({tpl.userFlowChips.length})
-              </p>
-              <ul className="space-y-0.5">
-                {tpl.userFlowChips.map(c => (
-                  <li key={c} className="text-[11px] text-ink-muted">· {c}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
-                {t('facilitator.template_preview_canvas_chips_label')} ({tpl.canvasChips.length})
-              </p>
-              <ul className="space-y-0.5">
-                {tpl.canvasChips.map(c => (
-                  <li key={c} className="text-[11px] text-ink-muted">· {c}</li>
-                ))}
-              </ul>
-            </div>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <PreviewList title={t('facilitator.template_preview_flow_chips_label')} items={tpl.userFlowChips} />
+            <PreviewList title={t('facilitator.template_preview_canvas_chips_label')} items={tpl.canvasChips} />
           </div>
         </div>
       )}
@@ -181,17 +159,30 @@ function WildfireTemplateCard({ onLoad }: { onLoad: () => void }) {
   )
 }
 
-function Stat({ n, label }: { n: number; label: string }) {
+function PreviewList({ title, items }: { title: string; items: string[] }) {
   return (
-    <span className="text-[11px] text-ink-subtle">
-      <span className="font-semibold text-brand-700">{n}</span> {label}
-    </span>
+    <div>
+      <h4 className="mb-2 text-sm font-medium text-ink">
+        {title} <span className="font-normal text-ink-subtle">{items.length}</span>
+      </h4>
+      <ul className="space-y-1 text-meta text-ink-muted">
+        {items.map(c => <li key={c}>{c}</li>)}
+      </ul>
+    </div>
   )
 }
+
+const ZONES = [
+  { key: 'facilitator.zone_customer', range: [0, 4], tone: 'bg-paper-raised' },
+  { key: 'facilitator.zone_internal', range: [4, 8], tone: 'bg-sage-100/40' },
+  { key: 'facilitator.zone_external', range: [8, 15], tone: 'bg-sage-100/70' },
+  { key: 'facilitator.zone_public', range: [15, 99], tone: 'bg-sage-100' },
+] as const
 
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function CreateSession() {
+  useLang()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
@@ -294,120 +285,96 @@ export function CreateSession() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface-faint">
-      <NavBar showSignOut showFacilitatorNav />
+    <div className="flex min-h-screen flex-col bg-paper">
+      <FacilitatorHeader />
 
-      <main className="flex-1 px-6 py-10">
-        <div className="mx-auto max-w-2xl">
-
-          {/* Breadcrumb */}
-          <nav className="mb-6 flex items-center gap-2 text-sm text-ink-subtle">
-            <Link to="/facilitator" className="transition-colors hover:text-ink">
-              {t('facilitator.dashboard_title')}
-            </Link>
-            <span aria-hidden="true">/</span>
-            <span className="text-ink">{t('facilitator.create_session_title')}</span>
+      <main id="main" className="flex-1 px-4 py-10 sm:px-6 sm:py-14">
+        <div className="mx-auto max-w-3xl">
+          <nav aria-label={t('panel.breadcrumb')} className="text-meta text-ink-subtle">
+            <Link to="/facilitator" className="transition-colors hover:text-ink">{t('facilitator.dashboard_title')}</Link>
+            <span aria-hidden="true"> / </span>
+            <span className="text-ink-muted" aria-current="page">{t('facilitator.create_session_title')}</span>
           </nav>
 
-          <h1 className="text-xl font-semibold text-ink">{t('facilitator.create_session_title')}</h1>
-          <p className="mt-1 text-sm text-ink-muted">{t('facilitator.create_session_subtitle')}</p>
+          <h1 className="mt-3 font-display text-display text-ink">{t('facilitator.create_session_title')}</h1>
+          <p className="mt-2 max-w-xl text-[0.9375rem] text-ink-muted">{t('facilitator.create_session_subtitle')}</p>
 
-          {/* ── Template section ──────────────────────────────────────────── */}
-          <div className="mt-8">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-subtle">
-              {t('facilitator.template_section_title')}
-            </p>
+          <section className="mt-10" aria-labelledby="template-heading">
+            <h2 id="template-heading" className="mb-3 text-heading font-semibold text-ink">{t('facilitator.template_section_title')}</h2>
             <WildfireTemplateCard onLoad={loadWildfireTemplate} />
+          </section>
+
+          <div className="my-10 flex items-center gap-4" aria-hidden="true">
+            <span className="h-px flex-1 bg-line" />
+            <span className="font-display text-lg text-ink-subtle italic">{t('facilitator.configure_manually')}</span>
+            <span className="h-px flex-1 bg-line" />
           </div>
 
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center">
-              <span className="bg-surface-faint px-3 text-xs text-ink-subtle">
-                {t('facilitator.configure_manually')}
-              </span>
-            </div>
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-10" noValidate>
+            <section aria-labelledby="basics-heading" className="space-y-5">
+              <h2 id="basics-heading" className="font-display text-title text-ink">{t('create.basics')}</h2>
+              <Field label={t('facilitator.session_title_label')} error={errors.title}>
+                <Input
+                  id="title"
+                  name="title"
+                  autoComplete="off"
+                  value={form.title}
+                  onChange={e => set('title', e.target.value)}
+                  placeholder={t('facilitator.session_title_placeholder')}
+                  // First field of a dedicated create page: focusing it saves a click.
+                  autoFocus
+                />
+              </Field>
 
-          {/* ── Form ─────────────────────────────────────────────────────── */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+              <Field label={t('facilitator.workshop_tag_label')} hint={t('facilitator.workshop_tag_hint')} error={errors.workshop_tag}>
+                <Input
+                  id="tag"
+                  name="workshop_tag"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="font-mono"
+                  value={form.workshop_tag}
+                  onChange={e => { setTagTouched(true); set('workshop_tag', e.target.value) }}
+                  placeholder={t('facilitator.workshop_tag_placeholder')}
+                />
+              </Field>
 
-            {/* Title */}
-            <div className="space-y-1.5">
-              <Label htmlFor="title">{t('facilitator.session_title_label')}</Label>
-              <Input
-                id="title"
-                value={form.title}
-                onChange={e => set('title', e.target.value)}
-                placeholder={t('facilitator.session_title_placeholder')}
-                error={errors.title}
-                autoFocus
-              />
-            </div>
+              <Field label={t('facilitator.slides_url_label')}>
+                <Input
+                  id="slides"
+                  name="slides_url"
+                  type="url"
+                  inputMode="url"
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={form.slides_url}
+                  onChange={e => set('slides_url', e.target.value)}
+                  placeholder={t('facilitator.slides_url_placeholder')}
+                />
+              </Field>
 
-            {/* Workshop tag */}
-            <div className="space-y-1.5">
-              <Label htmlFor="tag">{t('facilitator.workshop_tag_label')}</Label>
-              <Input
-                id="tag"
-                value={form.workshop_tag}
-                onChange={e => { setTagTouched(true); set('workshop_tag', e.target.value) }}
-                placeholder={t('facilitator.workshop_tag_placeholder')}
-                error={errors.workshop_tag}
-              />
-              <p className="text-xs text-ink-subtle">{t('facilitator.workshop_tag_hint')}</p>
-            </div>
+              <Field label={t('facilitator.wildfire_url_label')} error={errors.wildfire_url}>
+                <Input
+                  id="wildfire"
+                  name="wildfire_url"
+                  type="url"
+                  inputMode="url"
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={form.wildfire_url}
+                  onChange={e => set('wildfire_url', e.target.value)}
+                  placeholder={t('facilitator.wildfire_url_placeholder')}
+                />
+              </Field>
+            </section>
 
-            <div className="border-t border-border" />
+            <section aria-labelledby="content-heading" className="space-y-8 border-t border-line pt-10">
+              <h2 id="content-heading" className="font-display text-title text-ink">{t('create.content')}</h2>
 
-            {/* Slides URL */}
-            <div className="space-y-1.5">
-              <Label htmlFor="slides">
-                {t('facilitator.slides_url_label')}
-                <span className="ml-1.5 text-xs font-normal text-ink-subtle">({t('common.optional')})</span>
-              </Label>
-              <Input
-                id="slides"
-                type="url"
-                value={form.slides_url}
-                onChange={e => set('slides_url', e.target.value)}
-                placeholder={t('facilitator.slides_url_placeholder')}
-              />
-            </div>
-
-            {/* Wildfire URL */}
-            <div className="space-y-1.5">
-              <Label htmlFor="wildfire">{t('facilitator.wildfire_url_label')}</Label>
-              <Input
-                id="wildfire"
-                type="url"
-                value={form.wildfire_url}
-                onChange={e => set('wildfire_url', e.target.value)}
-                placeholder={t('facilitator.wildfire_url_placeholder')}
-                error={errors.wildfire_url}
-              />
-            </div>
-
-            <div className="border-t border-border" />
-
-            {/* ── User Flow Chips ─────────────────────────────────────────── */}
-            <div className="space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <Label>{t('facilitator.user_flow_chips_label')}</Label>
-                  <p className="mt-0.5 text-xs text-ink-subtle">{t('facilitator.user_flow_chips_hint')}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setChips([...WILDFIRE_TEMPLATE.userFlowChips])}
-                  className="shrink-0 rounded-lg border border-border px-2.5 py-1 text-[11px] font-medium text-ink-muted transition-colors hover:border-brand-400 hover:text-brand-600"
-                >
-                  {t('facilitator.reset_to_wildfire')}
-                </button>
-              </div>
               <ChipList
+                id="flow-chip"
+                label={t('facilitator.user_flow_chips_label')}
+                hint={t('facilitator.user_flow_chips_hint')}
                 chips={chips}
                 inputValue={chipInput}
                 placeholder={t('facilitator.user_flow_chips_placeholder')}
@@ -415,25 +382,13 @@ export function CreateSession() {
                 onInputChange={setChipInput}
                 onAdd={addChip}
                 onRemove={label => setChips(prev => prev.filter(c => c !== label))}
+                onReset={() => setChips([...WILDFIRE_TEMPLATE.userFlowChips])}
               />
-            </div>
 
-            {/* ── Canvas Chips ────────────────────────────────────────────── */}
-            <div className="space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <Label>{t('facilitator.canvas_chips_label')}</Label>
-                  <p className="mt-0.5 text-xs text-ink-subtle">{t('facilitator.canvas_chips_hint')}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setCanvasChips([...WILDFIRE_TEMPLATE.canvasChips])}
-                  className="shrink-0 rounded-lg border border-border px-2.5 py-1 text-[11px] font-medium text-ink-muted transition-colors hover:border-brand-400 hover:text-brand-600"
-                >
-                  {t('facilitator.reset_to_wildfire')}
-                </button>
-              </div>
               <ChipList
+                id="canvas-chip"
+                label={t('facilitator.canvas_chips_label')}
+                hint={t('facilitator.canvas_chips_hint')}
                 chips={canvasChips}
                 inputValue={canvasChipInput}
                 placeholder={t('facilitator.canvas_chips_placeholder')}
@@ -441,49 +396,13 @@ export function CreateSession() {
                 onInputChange={setCanvasChipInput}
                 onAdd={addCanvasChip}
                 onRemove={label => setCanvasChips(prev => prev.filter(c => c !== label))}
+                onReset={() => setCanvasChips([...WILDFIRE_TEMPLATE.canvasChips])}
               />
-            </div>
-
-            {/* ── Stakeholder Suggestions ─────────────────────────────────── */}
-            <div className="space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <Label>{t('facilitator.stakeholder_suggestions_label')}</Label>
-                  <p className="mt-0.5 text-xs text-ink-subtle">{t('facilitator.stakeholder_suggestions_hint')}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setStakeholderSuggestions([...WILDFIRE_TEMPLATE.stakeholderSuggestions])}
-                  className="shrink-0 rounded-lg border border-border px-2.5 py-1 text-[11px] font-medium text-ink-muted transition-colors hover:border-brand-400 hover:text-brand-600"
-                >
-                  {t('facilitator.reset_to_wildfire')}
-                </button>
-              </div>
-
-              {/* Zone preview badges */}
-              {stakeholderSuggestions.length > 0 && (
-                <div className="rounded-lg border border-border bg-white p-3">
-                  <div className="grid grid-cols-4 gap-2 text-[10px]">
-                    {[
-                      { label: t('facilitator.zone_customer'), color: 'text-brand-700 bg-brand-50 border-brand-200', range: [0, 4] },
-                      { label: t('facilitator.zone_internal'), color: 'text-amber-700 bg-amber-50 border-amber-200', range: [4, 8] },
-                      { label: t('facilitator.zone_external'), color: 'text-violet-700 bg-violet-50 border-violet-200', range: [8, 15] },
-                      { label: t('facilitator.zone_public'),   color: 'text-slate-600 bg-slate-50 border-slate-200', range: [15, 99] },
-                    ].map(zone => (
-                      <div key={zone.label}>
-                        <p className="mb-1 font-semibold text-ink-subtle">{zone.label}</p>
-                        <ul className="space-y-0.5">
-                          {stakeholderSuggestions.slice(zone.range[0], zone.range[1]).map(s => (
-                            <li key={s} className={`rounded border px-1.5 py-0.5 ${zone.color}`}>{s}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <ChipList
+                id="stakeholder"
+                label={t('facilitator.stakeholder_suggestions_label')}
+                hint={t('facilitator.stakeholder_suggestions_hint')}
                 chips={stakeholderSuggestions}
                 inputValue={stakeholderInput}
                 placeholder={t('facilitator.stakeholder_suggestions_placeholder')}
@@ -491,17 +410,26 @@ export function CreateSession() {
                 onInputChange={setStakeholderInput}
                 onAdd={addStakeholder}
                 onRemove={label => setStakeholderSuggestions(prev => prev.filter(s => s !== label))}
-              />
-            </div>
+                onReset={() => setStakeholderSuggestions([...WILDFIRE_TEMPLATE.stakeholderSuggestions])}
+              >
+                {stakeholderSuggestions.length > 0 && (
+                  <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4">
+                    {ZONES.map(zone => (
+                      <div key={zone.key} className={cn('p-3', zone.tone)}>
+                        <p className="mb-1.5 font-display text-base text-sage-700 italic">{t(zone.key)}</p>
+                        <ul className="space-y-0.5 text-meta text-ink-muted">
+                          {stakeholderSuggestions.slice(zone.range[0], zone.range[1]).map(s => <li key={s}>{s}</li>)}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ChipList>
+            </section>
 
-            {/* Actions */}
-            <div className="flex items-center justify-between border-t border-border pt-6">
-              <Link to="/facilitator">
-                <Button variant="ghost" type="button">{t('common.back')}</Button>
-              </Link>
-              <Button type="submit" loading={loading}>
-                {t('facilitator.create_button')}
-              </Button>
+            <div className="flex items-center justify-between border-t border-line pt-6">
+              <Link to="/facilitator" className={buttonClasses('ghost')}>{t('common.back')}</Link>
+              <Button type="submit" size="lg" loading={loading}>{t('facilitator.create_button')}</Button>
             </div>
           </form>
         </div>

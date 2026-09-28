@@ -1,74 +1,67 @@
 import { memo, useState } from 'react'
 import { Handle, Position, type NodeProps, type Node, useReactFlow } from '@xyflow/react'
+import { ChevronRight, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { t } from '@/lib/i18n'
+import { fieldCompact } from '@/components/ui/fieldStyles'
 
 type ChipNodeType = Node<{ label: string; note: string }, 'chipNode'>
 
 export const ChipNode = memo(function ChipNode({ id, data }: NodeProps<ChipNodeType>) {
   const { setNodes, setEdges } = useReactFlow()
-  const [showNote, setShowNote] = useState(false)
+  const [showNote, setShowNote] = useState(Boolean(data.note))
 
   function updateNote(value: string) {
-    setNodes(nds =>
-      nds.map(n => n.id === id ? { ...n, data: { ...n.data, note: value } } : n),
-    )
+    setNodes(nds => nds.map(n => (n.id === id ? { ...n, data: { ...n.data, note: value } } : n)))
   }
 
   function deleteNode(e: React.MouseEvent) {
     e.stopPropagation()
     setNodes(nds => nds.filter(n => n.id !== id))
-    setEdges(eds => eds.filter(e => e.source !== id && e.target !== id))
-  }
-
-  function toggleNote(e: React.MouseEvent) {
-    e.stopPropagation()
-    setShowNote(x => !x)
+    setEdges(eds => eds.filter(edge => edge.source !== id && edge.target !== id))
   }
 
   return (
-    <div className="group relative min-w-[140px] max-w-[200px] rounded-xl border-2 border-brand-300 bg-white shadow-md transition-shadow hover:shadow-lg">
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="!h-3.5 !w-3.5 !border-2 !border-brand-400 !bg-brand-50"
-      />
+    <div className="w-48 rounded-md border border-line-strong bg-paper-raised shadow-float">
+      <Handle type="target" position={Position.Left} />
 
-      <div className="flex items-start justify-between gap-2 px-3 pb-1 pt-3">
-        <span className="text-sm font-semibold leading-snug text-ink">{data.label}</span>
+      <div className="flex items-start justify-between gap-1 py-2.5 pr-1.5 pl-3">
+        <span className="text-sm leading-snug font-medium text-ink">{data.label}</span>
         <button
-          onMouseDown={deleteNode}
-          className="-mt-0.5 shrink-0 text-ink-subtle opacity-0 transition-opacity hover:text-error group-hover:opacity-100"
-          title="Remove chip"
+          type="button"
+          onClick={deleteNode}
+          aria-label={t('canvas.remove_node', { chip: data.label })}
+          className="nodrag -mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-ink-subtle transition-colors hover:bg-danger-bg hover:text-danger"
         >
-          <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M4 4l8 8M12 4l-8 8" />
-          </svg>
+          <X className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
       </div>
 
       <button
-        onMouseDown={toggleNote}
-        className="w-full px-3 pb-2 text-left text-[11px] text-ink-subtle transition-colors hover:text-brand-600"
+        type="button"
+        onClick={e => { e.stopPropagation(); setShowNote(x => !x) }}
+        aria-expanded={showNote}
+        className="nodrag flex w-full items-center gap-1 border-t border-line px-3 py-1.5 text-left text-meta text-ink-muted transition-colors hover:text-ink"
       >
-        {showNote ? '▾ note' : '▸ note'}
+        <ChevronRight className={cn('h-3.5 w-3.5 transition-transform duration-150', showNote && 'rotate-90')} aria-hidden="true" />
+        {t('canvas.note')}
       </button>
 
       {showNote && (
         <div className="px-3 pb-3">
+          <label htmlFor={`note-${id}`} className="sr-only">{t('canvas.note')}</label>
           <textarea
+            id={`note-${id}`}
             value={data.note ?? ''}
             onChange={e => updateNote(e.target.value)}
-            placeholder="Add a note…"
+            placeholder={t('canvas.note_placeholder')}
             rows={2}
-            className="nodrag nopan w-full resize-none rounded-lg border border-border bg-surface-faint px-2 py-1.5 text-xs text-ink placeholder:text-ink-subtle focus:border-brand-400 focus:outline-none"
+            className={cn(fieldCompact, 'nodrag nopan resize-none')}
           />
         </div>
       )}
 
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="!h-3.5 !w-3.5 !border-2 !border-brand-400 !bg-brand-50"
-      />
+      <Handle type="source" position={Position.Right} />
     </div>
   )
 })

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { redirectToWildfire } from './utils'
-import type { ControlMessage, SessionPhase } from '@/types'
+import type { SessionPhase } from '@/types'
 
 export const PHASE_ROUTES: Record<SessionPhase, string> = {
   lobby: 'lobby',
@@ -41,6 +41,7 @@ export function useWorkshopChannel(
   const { onReaction, passive = false } = options
   const navigate = useNavigate()
   const [broadcastMessage, setBroadcastMessage] = useState<string | null>(null)
+  const [connected, setConnected] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
   const onReactionRef = useRef(onReaction)
   onReactionRef.current = onReaction
@@ -49,19 +50,22 @@ export function useWorkshopChannel(
     if (!slug) return
 
     let reconnectTimer: ReturnType<typeof setTimeout>
+    let disposed = false
 
     function connect() {
       const ws = new WebSocket(`${WS_BASE}/api/v1/ws/sessions/${slug}`)
       wsRef.current = ws
 
+      ws.onopen = () => setConnected(true)
+
       ws.onmessage = (event) => {
-        let payload: ControlMessage & { kind?: string; name?: string }
+        let payload: { type?: string; phase?: SessionPhase; message?: string; kind?: string; name?: string }
         try { payload = JSON.parse(event.data) } catch { return }
 
         if (!passive) {
           if (payload.type === 'phase' && payload.phase)
             navigate(`/session/${slug}/${PHASE_ROUTES[payload.phase]}`, { replace: true })
-          if (payload.type === 'launch')
+          if (payload.type === 'launch' && slug)
             void redirectToWildfire(slug)
         }
         if (payload.type === 'broadcast' && payload.message)
@@ -71,13 +75,16 @@ export function useWorkshopChannel(
       }
 
       ws.onclose = () => {
-        reconnectTimer = setTimeout(connect, 3000)
+        setConnected(false)
+        // onclose also fires after our own cleanup closes the socket; don't resurrect it.
+        if (!disposed) reconnectTimer = setTimeout(connect, 3000)
       }
     }
 
     connect()
 
     return () => {
+      disposed = true
       clearTimeout(reconnectTimer)
       wsRef.current?.close()
       wsRef.current = null
@@ -91,6 +98,7 @@ export function useWorkshopChannel(
 
   return {
     broadcastMessage,
+    connected,
     dismissBroadcast: () => setBroadcastMessage(null),
     sendMessage,
   }

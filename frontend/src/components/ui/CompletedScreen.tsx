@@ -1,45 +1,40 @@
-import { NavBar } from '@/components/layout/NavBar'
-import { WorkshopProgress } from './WorkshopProgress'
-import { BroadcastBanner } from './BroadcastBanner'
+import { useEffect } from 'react'
+import { useParams } from 'react-router-dom'
+import { ParticipantHeader } from '@/components/layout/Headers'
+import { DossierStack } from './DossierStack'
+import { Status } from './Status'
+import { t } from '@/lib/i18n'
+import { activityLabel, markActivityDone, useDossier, type Activity } from '@/lib/dossier'
 
 interface CompletedScreenProps {
-  message: string
+  activity: Activity
   broadcastMessage: string | null
   onDismissBroadcast: () => void
+  connected?: boolean
 }
 
-export function CompletedScreen({ message, broadcastMessage, onDismissBroadcast }: CompletedScreenProps) {
+/** Shown when an activity is finished: its card lands on the participant's dossier. */
+export function CompletedScreen({ activity, broadcastMessage, onDismissBroadcast, connected = true }: CompletedScreenProps) {
+  const { slug } = useParams<{ slug: string }>()
+  const dossier = useDossier(slug)
+
+  useEffect(() => { markActivityDone(slug, activity) }, [slug, activity])
+
   return (
-    <div className="flex min-h-screen flex-col bg-surface-faint">
-      <NavBar />
-      <BroadcastBanner message={broadcastMessage} onDismiss={onDismissBroadcast} />
-      <WorkshopProgress />
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full border border-brand-200 bg-brand-50">
-          <svg
-            className="h-10 w-10 text-brand-600"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.75"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+    <div className="flex min-h-screen flex-col bg-paper">
+      <ParticipantHeader broadcastMessage={broadcastMessage} onDismissBroadcast={onDismissBroadcast} />
+      <main id="main" className="flex flex-1 flex-col items-center justify-center gap-10 px-4 py-14 text-center sm:px-6">
+        <DossierStack done={dossier} highlight={activity} />
+        <div role="status">
+          <h1 className="font-display text-display text-ink">
+            {activityLabel(activity)} <span className="text-ink-muted">{t('completed.landed')}</span>
+          </h1>
+          <p className="mx-auto mt-3 max-w-md text-ink-muted">{t('completed.waiting')}</p>
         </div>
-        <div>
-          <p className="text-xl font-semibold text-ink">{message}</p>
-          <p className="mt-2 text-sm text-ink-muted">
-            Waiting for the facilitator to open the next activity.
-          </p>
-        </div>
-        <span className="flex items-center gap-2 text-xs text-ink-subtle">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-500" aria-hidden="true" />
-          Connected
-        </span>
-      </div>
+        <Status tone={connected ? 'done' : 'warning'}>
+          {connected ? t('completed.connected') : t('common.reconnecting')}
+        </Status>
+      </main>
     </div>
   )
 }

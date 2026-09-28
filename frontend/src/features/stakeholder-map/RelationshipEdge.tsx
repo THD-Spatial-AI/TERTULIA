@@ -6,6 +6,7 @@ import {
   useReactFlow,
   type EdgeProps,
 } from '@xyflow/react'
+import { X } from 'lucide-react'
 import { t, useLang } from '@/lib/i18n'
 
 export type RelType = 'relates' | 'informs' | 'institutional' | 'conflicts'
@@ -13,10 +14,10 @@ export type RelType = 'relates' | 'informs' | 'institutional' | 'conflicts'
 const REL_CYCLE: RelType[] = ['relates', 'informs', 'institutional', 'conflicts']
 
 const REL_STYLE: Record<RelType, { stroke: string; strokeWidth: number; strokeDasharray?: string; markerEnd?: string }> = {
-  relates:      { stroke: '#cbd5e1', strokeWidth: 1.5 },
-  informs:      { stroke: '#4a7c59', strokeWidth: 1.5, markerEnd: 'url(#arrow-informs)' },
-  institutional:{ stroke: '#64748b', strokeWidth: 3 },
-  conflicts:    { stroke: '#ef4444', strokeWidth: 1.5, strokeDasharray: '5 3' },
+  relates:       { stroke: 'var(--color-line-strong)', strokeWidth: 1.5 },
+  informs:       { stroke: 'var(--color-sage-600)', strokeWidth: 1.5, markerEnd: 'url(#arrow-informs)' },
+  institutional: { stroke: 'var(--color-ink-muted)', strokeWidth: 2.5 },
+  conflicts:     { stroke: 'var(--color-danger)', strokeWidth: 1.5, strokeDasharray: '5 3' },
 }
 
 export interface RelationshipEdgeData {
@@ -58,7 +59,7 @@ export const RelationshipEdge = memo(function RelationshipEdge({
       {/* SVG marker defs — injected once per edge type but harmless if repeated */}
       <defs>
         <marker id="arrow-informs" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-          <path d="M0,0 L0,6 L8,3 z" fill="#4a7c59" />
+          <path d="M0,0 L0,6 L8,3 z" style={{ fill: 'var(--color-sage-600)' }} />
         </marker>
       </defs>
 
@@ -79,34 +80,37 @@ export const RelationshipEdge = memo(function RelationshipEdge({
           className="nodrag nopan pointer-events-auto absolute"
         >
           {open ? (
-            <div className="flex items-center gap-1 rounded-full border border-border bg-white px-2 py-1 shadow-md">
+            <div className="flex items-center gap-0.5 rounded-full border border-line bg-paper-raised p-1 shadow-float">
               {REL_CYCLE.map(type => (
                 <button
                   key={type}
+                  type="button"
                   onClick={() => setType(type)}
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                  aria-pressed={type === relType}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
                     type === relType
-                      ? 'bg-brand-100 text-brand-700'
-                      : 'text-ink-subtle hover:bg-surface hover:text-ink'
+                      ? 'bg-ink text-paper'
+                      : 'text-ink-muted hover:bg-paper-sunk hover:text-ink'
                   }`}
                 >
                   {t(`stakeholder_map.rel_${type}`)}
                 </button>
               ))}
               <button
+                type="button"
                 onClick={deleteEdge}
-                className="ml-1 text-ink-subtle transition-colors hover:text-error"
-                title="Remove"
+                aria-label={t('stakeholder_map.remove_relationship')}
+                className="ml-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-danger-bg hover:text-danger"
               >
-                <svg className="h-3 w-3" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <path d="M2 2l6 6M8 2l-6 6" />
-                </svg>
+                <X className="h-3 w-3" aria-hidden="true" />
               </button>
             </div>
           ) : (
             <button
+              type="button"
               onClick={() => setOpen(true)}
-              className="rounded-full border border-border bg-white px-2 py-0.5 text-[10px] font-medium text-ink-subtle shadow-xs transition-all hover:border-brand-300 hover:text-brand-600 hover:shadow-sm"
+              aria-expanded={false}
+              className="rounded-full border border-line bg-paper-raised px-2.5 py-0.5 text-[11px] font-medium text-ink-muted transition-colors hover:border-line-strong hover:text-ink"
             >
               {t(`stakeholder_map.rel_${relType}`)}
             </button>

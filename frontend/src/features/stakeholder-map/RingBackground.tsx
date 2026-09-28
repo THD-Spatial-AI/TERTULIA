@@ -9,6 +9,8 @@ import { t } from '@/lib/i18n'
  * the SVG element itself never scales (no gaps at any zoom level) while the
  * rings still zoom and pan with the canvas.
  */
+const LABEL = { fill: 'var(--color-sage-600)', fontFamily: 'var(--font-display)', fontStyle: 'italic' } as const
+
 export function RingBackground() {
   const { x: vx, y: vy, zoom } = useViewport()
 
@@ -44,48 +46,48 @@ export function RingBackground() {
         <ellipse
           cx={pCx} cy={pCy} rx={sr(595)} ry={sr(510)}
           transform={`rotate(-13, ${pCx}, ${pCy})`}
-          fill="#ecf0f6" stroke="#d4dae6" strokeWidth="1.5"
+          style={{ fill: 'oklch(0.945 0.014 190)', stroke: 'var(--color-sage-300)', strokeWidth: 1 }}
         />
 
         {/* External */}
         <ellipse
           cx={eCx} cy={eCy} rx={sr(400)} ry={sr(345)}
           transform={`rotate(-9, ${eCx}, ${eCy})`}
-          fill="#f1f4f9" stroke="#d4dae6" strokeWidth="1.5"
+          style={{ fill: 'oklch(0.957 0.011 190)', stroke: 'var(--color-sage-300)', strokeWidth: 1 }}
         />
 
         {/* Internal */}
         <ellipse
           cx={iCx} cy={iCy} rx={sr(250)} ry={sr(220)}
           transform={`rotate(-5, ${iCx}, ${iCy})`}
-          fill="#f6f8fb" stroke="#d4dae6" strokeWidth="1.5"
+          style={{ fill: 'oklch(0.968 0.008 190)', stroke: 'var(--color-sage-300)', strokeWidth: 1 }}
         />
 
         {/* Customer / User — always partially clipped by the left edge */}
         <ellipse
           cx={cCx} cy={cCy} rx={sr(120)} ry={sr(140)}
-          fill="#ffffff" stroke="#d4dae6" strokeWidth="1.5"
+          style={{ fill: 'var(--color-paper-raised)', stroke: 'var(--color-sage-300)', strokeWidth: 1 }}
         />
 
         {/* Zone labels — also in flow space so they travel with their zone */}
         <text x={sx(130)} y={sy(265)}
-          textAnchor="middle" fontSize="10.5" fontWeight="500"
-          fill="#a0aec0" fontFamily="system-ui, sans-serif">
+          textAnchor="middle" fontSize="15"
+          style={LABEL}>
           {t('stakeholder_map.ring_customer')}
         </text>
         <text x={sx(258)} y={sy(208)}
-          textAnchor="middle" fontSize="10.5" fontWeight="500"
-          fill="#a0aec0" fontFamily="system-ui, sans-serif">
+          textAnchor="middle" fontSize="15"
+          style={LABEL}>
           {t('stakeholder_map.ring_internal')}
         </text>
         <text x={sx(422)} y={sy(158)}
-          textAnchor="middle" fontSize="10.5" fontWeight="500"
-          fill="#a0aec0" fontFamily="system-ui, sans-serif">
+          textAnchor="middle" fontSize="15"
+          style={LABEL}>
           {t('stakeholder_map.ring_external')}
         </text>
         <text x={sx(592)} y={sy(108)}
-          textAnchor="middle" fontSize="10.5" fontWeight="500"
-          fill="#a0aec0" fontFamily="system-ui, sans-serif">
+          textAnchor="middle" fontSize="15"
+          style={LABEL}>
           {t('stakeholder_map.ring_public')}
         </text>
       </svg>

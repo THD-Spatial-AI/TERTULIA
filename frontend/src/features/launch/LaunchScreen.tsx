@@ -1,10 +1,16 @@
 import { useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { t } from '@/lib/i18n'
+import { Wordmark } from '@/components/layout/Wordmark'
+import { DossierStack } from '@/components/ui/DossierStack'
+import { t, useLang } from '@/lib/i18n'
+import { useDossier } from '@/lib/dossier'
 import { redirectToWildfire } from '@/lib/utils'
 
+/** The hand-off: the participant's dossier leaves the table with them. */
 export function LaunchScreen() {
+  useLang()
   const { slug } = useParams<{ slug: string }>()
+  const dossier = useDossier(slug)
 
   useEffect(() => {
     if (!slug) return
@@ -12,18 +18,18 @@ export function LaunchScreen() {
   }, [slug])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-brand-950 px-6 text-center">
-      <div className="flex h-20 w-20 items-center justify-center rounded-full border border-fire-600/40 bg-fire-600/10">
-        <span className="text-4xl" role="img" aria-label="fire">🔥</span>
-      </div>
-      <div>
-        <h1 className="text-2xl font-semibold text-white">{t('launch.title')}</h1>
-        <p className="mt-2 text-sm text-brand-400">{t('launch.subtitle')}</p>
-      </div>
-      <div className="flex items-center gap-2.5">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fire-500" />
-        <span className="text-xs text-brand-500">{t('launch.redirecting')}</span>
-      </div>
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-paper">
+      <header className="flex h-14 items-center px-4 sm:px-6">
+        <Wordmark to={null} />
+      </header>
+      <main id="main" className="flex flex-1 flex-col items-center justify-center gap-12 px-4 pb-16 text-center sm:px-6">
+        <DossierStack done={dossier} handingOff />
+        <div role="status">
+          <h1 className="font-display text-display text-ink">{t('launch.title')}</h1>
+          <p className="mx-auto mt-3 max-w-md text-[1.0625rem] text-ink-muted">{t('launch.handoff')}</p>
+          <p className="mt-6 text-meta text-ink-subtle">{t('launch.redirecting')}</p>
+        </div>
+      </main>
     </div>
   )
 }

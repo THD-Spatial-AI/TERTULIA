@@ -1,20 +1,40 @@
 /**
  * Auth helpers for the Keycloak-backed facilitator session.
- * The Go auth service owns the OIDC flow; the browser only sees an opaque
- * session_id cookie — no tokens or keys reach the frontend.
+ *
+ * The Go auth service owns the OIDC/token flow; the browser only ever holds an
+ * opaque `session_id` cookie — no tokens or keys reach the frontend. Login is a
+ * direct email/password grant (POST /api/login on the auth service).
+ *
+ * The auth service is reached SAME-ORIGIN via the nginx proxy at `/authsvc/*`
+ * (see frontend/nginx.conf), so there is no CORS and the session cookie is a
+ * first-party cookie for this origin.
  */
 
-const AUTH_SERVICE_URL = (import.meta.env.VITE_AUTH_SERVICE_URL as string | undefined) ?? ''
-const AUTH_REALM       = (import.meta.env.VITE_AUTH_REALM as string | undefined) ?? 'tertulia'
+const AUTH_BASE = '/authsvc' // nginx proxies /authsvc/ -> auth-service /api/
 
-export function loginUrl(): string {
-  const redirect = encodeURIComponent(`${window.location.origin}/facilitator`)
-  return `${AUTH_SERVICE_URL}/login?realm=${AUTH_REALM}&redirect_uri=${redirect}`
-}
-
-export function logoutUrl(): string {
-  const redirect = encodeURIComponent(`${window.location.origin}/facilitator/login`)
-  return `${AUTH_SERVICE_URL}/logout?realm=${AUTH_REALM}&redirect_uri=${redirect}`
+export async function login(
+  email: string,
+  password: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${AUTH_BASE}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password }),
+    })
+    if (res.ok) return { ok: true }
+    let error = 'Invalid email or password.'
+    try {
+      const body = await res.json()
+      error = body.message || body.error || body.detail || error
+    } catch {
+      /* non-JSON error body */
+    }
+    return { ok: false, error }
+  } catch {
+    return { ok: false, error: 'Authentication service is unreachable.' }
+  }
 }
 
 export async function getMe(): Promise<{ authenticated: boolean; email?: string; sub?: string } | null> {
@@ -29,5 +49,9 @@ export async function getMe(): Promise<{ authenticated: boolean; email?: string;
 }
 
 export function signOut(): void {
-  window.location.href = logoutUrl()
+  void fetch(`${AUTH_BASE}/logout`, { method: 'POST', credentials: 'include' })
+    .catch(() => {})
+    .finally(() => {
+      window.location.href = '/facilitator/login'
+    })
 }

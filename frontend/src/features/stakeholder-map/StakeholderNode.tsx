@@ -1,6 +1,8 @@
-import { memo, useState } from 'react'
+import { memo } from 'react'
 import { Handle, NodeResizer, Position, useReactFlow, type NodeProps, type Node } from '@xyflow/react'
+import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { t } from '@/lib/i18n'
 
 export interface StakeholderNodeData extends Record<string, unknown> {
   name: string
@@ -15,7 +17,6 @@ export const StakeholderNode = memo(function StakeholderNode({
   selected,
 }: NodeProps<StakeholderNodeType>) {
   const { setNodes, setEdges } = useReactFlow()
-  const [hovered, setHovered] = useState(false)
 
   function deleteNode() {
     setNodes(ns => ns.filter(n => n.id !== id))
@@ -35,65 +36,49 @@ export const StakeholderNode = memo(function StakeholderNode({
 
   return (
     <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       className={cn(
-        'relative rounded-lg border bg-white px-2 py-1 shadow-xs transition-shadow',
-        selected
-          ? 'border-brand-400 shadow-sm ring-1 ring-brand-400/20'
-          : 'border-border hover:border-brand-300 hover:shadow-sm',
+        'group relative rounded-md border bg-paper-raised px-2.5 py-1.5 transition-[border-color,box-shadow] duration-150',
+        selected ? 'border-clay-600 shadow-float' : 'border-line-strong hover:shadow-float',
       )}
     >
       <NodeResizer
         minWidth={60}
         minHeight={26}
         isVisible={selected === true}
-        lineStyle={{ border: '1.5px dashed #4a7c59', borderRadius: '8px' }}
-        handleStyle={{
-          width: 6,
-          height: 6,
-          backgroundColor: '#4a7c59',
-          border: 'none',
-          borderRadius: '50%',
-        }}
+        lineStyle={{ border: '1.5px dashed var(--color-clay-600)', borderRadius: 'var(--radius-md)' }}
+        handleStyle={{ width: 7, height: 7, backgroundColor: 'var(--color-clay-600)', border: 'none', borderRadius: '50%' }}
       />
 
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="!h-2 !w-2 !border !border-border !bg-white"
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="!h-2 !w-2 !border !border-border !bg-white"
-      />
+      <Handle type="target" position={Position.Left} />
+      <Handle type="source" position={Position.Right} />
 
-      {hovered && (
-        <button
-          onMouseDown={e => { e.stopPropagation(); deleteNode() }}
-          className="absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-border bg-white text-ink-subtle shadow-xs transition-colors hover:border-error hover:text-error"
-          title="Remove"
-        >
-          <svg className="h-2 w-2" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <path d="M1.5 1.5l5 5M6.5 1.5l-5 5" />
-          </svg>
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={e => { e.stopPropagation(); deleteNode() }}
+        aria-label={t('canvas.remove_node', { chip: data.name || t('stakeholder_map.node_name') })}
+        className={cn(
+          'nodrag absolute -top-2.5 -right-2.5 inline-flex h-5 w-5 items-center justify-center rounded-full border border-line-strong bg-paper-raised text-ink-subtle transition-[opacity,color,border-color] hover:border-danger hover:text-danger',
+          selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
+        )}
+      >
+        <X className="h-3 w-3" aria-hidden="true" />
+      </button>
 
       <input
         value={data.name}
         size={nameSize}
         onChange={e => update('name', e.target.value)}
-        placeholder="Name"
-        className="block bg-transparent text-[11px] font-semibold leading-tight text-ink placeholder:text-ink-subtle focus:outline-none"
+        placeholder={t('stakeholder_map.node_name')}
+        aria-label={t('stakeholder_map.node_name')}
+        className="nodrag block bg-transparent text-xs leading-tight font-semibold text-ink placeholder:text-ink-subtle focus-visible:outline-none"
       />
       <input
         value={data.role}
         size={roleSize}
         onChange={e => update('role', e.target.value)}
-        placeholder="Role"
-        className="block bg-transparent text-[10px] leading-tight text-ink-muted placeholder:text-ink-subtle focus:outline-none"
+        placeholder={t('stakeholder_map.node_role')}
+        aria-label={t('stakeholder_map.node_role')}
+        className="nodrag block bg-transparent text-[11px] leading-tight text-ink-muted placeholder:text-ink-subtle focus-visible:outline-none"
       />
     </div>
   )

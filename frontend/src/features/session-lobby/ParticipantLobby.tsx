@@ -1,71 +1,49 @@
 import { useParams } from 'react-router-dom'
-import { NavBar } from '@/components/layout/NavBar'
-import { BroadcastBanner } from '@/components/ui/BroadcastBanner'
-import { WorkshopProgress } from '@/components/ui/WorkshopProgress'
+import { ParticipantHeader } from '@/components/layout/Headers'
+import { DossierStack } from '@/components/ui/DossierStack'
+import { Status } from '@/components/ui/Status'
 import { t } from '@/lib/i18n'
+import { useDossier } from '@/lib/dossier'
 import { useWorkshopChannel } from '@/lib/useWorkshopChannel'
 import { getStoredParticipant } from '@/lib/utils'
 
 export function ParticipantLobby() {
   const { slug } = useParams<{ slug: string }>()
   const participant = getStoredParticipant()
-  const { broadcastMessage, dismissBroadcast } = useWorkshopChannel(slug)
+  const { broadcastMessage, dismissBroadcast, connected } = useWorkshopChannel(slug)
+  const dossier = useDossier(slug)
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface-faint">
-      <NavBar />
-      <BroadcastBanner message={broadcastMessage} onDismiss={dismissBroadcast} />
-      <WorkshopProgress />
+    <div className="flex min-h-screen flex-col bg-paper">
+      <ParticipantHeader broadcastMessage={broadcastMessage} onDismissBroadcast={dismissBroadcast} />
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-16 text-center">
-        {/* Animated ring */}
-        <div className="relative flex h-20 w-20 items-center justify-center">
-          <div
-            className="absolute inset-0 rounded-full border-2 border-brand-300 animate-ping"
-            style={{ animationDuration: '2s' }}
-            aria-hidden="true"
-          />
-          <div className="flex h-full w-full items-center justify-center rounded-full border border-brand-200 bg-brand-50">
-            <svg
-              className="h-8 w-8 text-brand-600"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+      <main id="main" className="flex flex-1 items-center">
+        <div className="mx-auto grid w-full max-w-5xl items-center gap-14 px-4 py-14 sm:px-6 md:grid-cols-2">
+          <div style={{ animation: 'rise-in 400ms var(--ease-soft) both' }}>
+            <h1 className="font-display text-display text-ink">{t('participant_lobby.waiting_title')}</h1>
+            <p className="mt-4 max-w-md text-[1.0625rem] leading-relaxed text-ink-muted">{t('participant_lobby.next')}</p>
+
+            {participant && (
+              <dl className="mt-8 max-w-sm rounded-lg border border-line bg-paper-raised">
+                <div className="flex items-baseline justify-between gap-4 border-b border-line px-5 py-3">
+                  <dt className="text-meta text-ink-subtle">{t('participant_lobby.your_name')}</dt>
+                  <dd className="truncate font-display text-xl text-ink">{participant.display_name}</dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-4 px-5 py-3">
+                  <dt className="text-meta text-ink-subtle">{t('participant_lobby.your_role')}</dt>
+                  <dd className="truncate text-sm font-medium text-ink">{participant.role}</dd>
+                </div>
+              </dl>
+            )}
+
+            <Status tone={connected ? 'done' : 'warning'} className="mt-6">
+              {connected ? t('participant_lobby.connected') : t('common.reconnecting')}
+            </Status>
           </div>
-        </div>
 
-        <div>
-          <h1 className="text-2xl font-semibold text-ink">{t('participant_lobby.waiting_title')}</h1>
-          <p className="mt-2 text-sm text-ink-muted">{t('participant_lobby.waiting_subtitle')}</p>
+          <DossierStack done={dossier} className="md:justify-self-end" />
         </div>
-
-        {participant && (
-          <div className="mt-2 rounded-xl border border-border bg-surface px-8 py-5 text-left shadow-sm">
-            <dl className="space-y-1.5">
-              <div className="flex gap-3 text-sm">
-                <dt className="w-16 shrink-0 text-ink-subtle">{t('participant_lobby.your_name')}</dt>
-                <dd className="font-medium text-ink">{participant.display_name}</dd>
-              </div>
-              <div className="flex gap-3 text-sm">
-                <dt className="w-16 shrink-0 text-ink-subtle">{t('participant_lobby.your_role')}</dt>
-                <dd className="font-medium text-ink">{participant.role}</dd>
-              </div>
-            </dl>
-          </div>
-        )}
-
-        <div className="mt-4 flex items-center gap-2.5">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fire-500" aria-hidden="true" />
-          <span className="text-xs text-ink-subtle">{t('participant_lobby.connected')}</span>
-        </div>
-      </div>
+      </main>
     </div>
   )
 }

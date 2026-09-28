@@ -42,8 +42,14 @@ services:
       KC_DB_USERNAME:   ${POSTGRES_USER:-tertulia}
       KC_DB_PASSWORD:   ${POSTGRES_PASSWORD:-tertulia}
       KC_HEALTH_ENABLED: "true"
-      KC_HOSTNAME:      ${KC_HOSTNAME:-localhost}
+      # Single hostname reachable identically from the browser (host) AND from
+      # the auth-service container. go-oidc requires the issuer to match the URL
+      # it connects to, so both sides must use the SAME address. host.docker.internal
+      # resolves to the host from inside containers (Docker Desktop) and on the
+      # host itself, so localhost:8185 (published) is reachable via it from both.
+      KC_HOSTNAME:      ${KC_HOSTNAME:-http://host.docker.internal:8185}
       KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_HTTP_ENABLED:  "true"
     command: start-dev
     depends_on:
@@ -71,7 +77,8 @@ services:
       APP_ENV:            development
       APP_HOST:           0.0.0.0
       APP_PORT:           "8001"
-      KEYCLOAK_URL:       http://keycloak:8080
+      # Must match Keycloak's issuer (KC_HOSTNAME) exactly — see keycloak service.
+      KEYCLOAK_URL:       ${KEYCLOAK_ISSUER_URL:-http://host.docker.internal:8185}
       KEYCLOAK_REALM:     ${AUTH_REALM:-tertulia}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-tertulia-auth}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?KEYCLOAK_CLIENT_SECRET is required}
@@ -86,6 +93,16 @@ services:
       DB_USERNAME:        ${POSTGRES_USER:-tertulia}
       DB_PASSWORD:        ${POSTGRES_PASSWORD:-tertulia}
       SESSION_TTL_MINUTES: "60"
+      # Required for the auth-service to boot (RequireEnvInt).
+      REDIS_DATABASE:     "0"
+      # OIDC callback + cookie sharing so facilitator login works. REDIRECT_URL
+      # must be the auth-service URL reachable from the BROWSER, and must be
+      # registered as a redirect URI on the Keycloak client.
+      REDIRECT_URL:       ${AUTH_REDIRECT_URL:-http://localhost:8002/callback-auth}
+      COOKIE_DOMAIN:      ${COOKIE_DOMAIN:-localhost}
+      WEB_URLS:           ${FRONTEND_URL:-http://localhost:8080}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       keycloak:
         condition: service_healthy

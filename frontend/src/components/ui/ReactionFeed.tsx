@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { cn } from '@/lib/utils'
+import { t } from '@/lib/i18n'
 
 const EMOJI: Record<string, string> = {
   emoji_fire: '🔥',
@@ -45,15 +47,13 @@ export function ReactionFeed({ events }: ReactionFeedProps) {
 
   useEffect(() => () => { timers.current.forEach(clearTimeout) }, [])
 
-  if (cards.length === 0) return null
-
   const isRaiseHand = (kind: string) => kind === 'raise_hand'
 
   return (
     <div
       className="pointer-events-none fixed bottom-8 right-6 z-50 flex flex-col-reverse gap-3"
       aria-live="polite"
-      aria-label="Participant reactions"
+      aria-label={t('slides.reactions_label')}
     >
       {cards.map(card => (
         <div
@@ -66,44 +66,20 @@ export function ReactionFeed({ events }: ReactionFeedProps) {
                   transition: 'opacity 0.35s ease-in, transform 0.35s cubic-bezier(0.4, 0, 1, 1)',
                 }
               : {
-                  animation: 'reaction-enter 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                  animation: 'reaction-enter 0.42s var(--ease-soft) forwards',
                 }
           }
-          className={[
-            'flex items-center gap-3 rounded-2xl px-4 py-3 shadow-xl backdrop-blur-sm',
-            isRaiseHand(card.kind)
-              ? 'border border-fire-600/70 bg-fire-950/95 ring-2 ring-fire-500/25'
-              : 'border border-brand-700/60 bg-brand-900/95',
-          ].join(' ')}
-        >
-          {/* Pulse ring for raise_hand to grab attention */}
-          {isRaiseHand(card.kind) && !card.exiting && (
-            <span
-              className="absolute -inset-1 rounded-2xl border border-fire-500/40 animate-ping"
-              style={{ animationDuration: '1.6s' }}
-              aria-hidden="true"
-            />
+          className={cn(
+            'relative flex items-center gap-3 rounded-lg bg-ink py-3 pr-4 pl-3 text-paper shadow-float',
+            isRaiseHand(card.kind) && 'border-l-4 border-clay-500',
           )}
-
-          <span className="relative text-4xl leading-none" role="img" aria-label={card.kind}>
+        >
+          <span className="text-3xl leading-none" aria-hidden="true">
             {EMOJI[card.kind] ?? '💬'}
           </span>
-
-          <div className="relative min-w-0">
-            <p className={[
-              'text-sm font-semibold leading-tight truncate max-w-[160px]',
-              isRaiseHand(card.kind) ? 'text-fire-100' : 'text-white',
-            ].join(' ')}>
-              {card.name}
-            </p>
-            <p className={[
-              'text-xs leading-tight mt-0.5',
-              isRaiseHand(card.kind) ? 'text-fire-400' : 'text-brand-400',
-            ].join(' ')}>
-              {card.kind === 'raise_hand' ? 'raised their hand' :
-               card.kind === 'emoji_question' ? 'has a question' :
-               card.kind === 'emoji_fire' ? 'reacted 🔥' : 'reacted ❤️'}
-            </p>
+          <div className="min-w-0">
+            <p className="max-w-40 truncate text-sm leading-tight font-medium">{card.name}</p>
+            <p className="mt-0.5 text-meta leading-tight text-paper/70">{t(`reaction_feed.${card.kind}`)}</p>
           </div>
         </div>
       ))}

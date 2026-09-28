@@ -1,24 +1,17 @@
 import { Link } from 'react-router-dom'
 import { PageWrapper } from './PageWrapper'
-import { Button } from '@/components/ui/Button'
-import { t } from '@/lib/i18n'
+import { buttonClasses } from '@/components/ui/Button'
+import { t, useLang } from '@/lib/i18n'
 
 export function NotFound() {
+  useLang()
   return (
-    <PageWrapper maxWidth="full">
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <p className="font-mono text-8xl font-bold text-brand-200 select-none" aria-hidden="true">
-          404
-        </p>
-        <h1 className="mt-4 text-2xl font-semibold text-ink">Page not found</h1>
-        <p className="mt-2 max-w-sm text-sm text-ink-muted">
-          {t('errors.not_found')}
-        </p>
-        <div className="mt-8">
-          <Link to="/">
-            <Button variant="brand">{t('common.go_home')}</Button>
-          </Link>
-        </div>
+    <PageWrapper maxWidth="md">
+      <div className="py-20 sm:py-28">
+        <p className="font-mono text-meta text-ink-subtle">404</p>
+        <h1 className="mt-3 font-display text-display text-ink">{t('errors.page_not_found')}</h1>
+        <p className="mt-4 max-w-md text-[1.0625rem] text-ink-muted">{t('errors.not_found')}</p>
+        <Link to="/" className={`${buttonClasses('secondary')} mt-8`}>{t('common.go_home')}</Link>
       </div>
     </PageWrapper>
   )

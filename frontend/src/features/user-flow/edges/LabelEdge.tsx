@@ -6,6 +6,9 @@ import {
   useReactFlow,
   type EdgeProps,
 } from '@xyflow/react'
+import { cn } from '@/lib/utils'
+import { t } from '@/lib/i18n'
+import { fieldCompact } from '@/components/ui/fieldStyles'
 
 export const LabelEdge = memo(function LabelEdge({
   id,
@@ -52,8 +55,9 @@ export const LabelEdge = memo(function LabelEdge({
           <input
             value={label}
             onChange={e => setLabel(e.target.value)}
-            placeholder="label…"
-            className="w-24 rounded-full border border-border bg-white px-2.5 py-0.5 text-center text-[11px] text-ink shadow-xs placeholder:text-ink-subtle/50 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400/20"
+            placeholder={t('canvas.edge_placeholder')}
+            aria-label={t('canvas.edge_label')}
+            className={cn(fieldCompact, 'w-28 rounded-full px-2.5 py-0.5 text-center text-[11px]', !label && 'border-dashed bg-paper')}
           />
         </div>
       </EdgeLabelRenderer>

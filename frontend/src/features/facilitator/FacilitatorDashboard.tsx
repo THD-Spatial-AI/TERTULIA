@@ -1,49 +1,30 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { NavBar } from '@/components/layout/NavBar'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/Input'
-import { t } from '@/lib/i18n'
-import { getMe, signOut } from '@/lib/auth'
+import { ArrowRight, ChevronDown, Search, Trash2 } from 'lucide-react'
+import { FacilitatorHeader } from '@/components/layout/Headers'
+import { buttonClasses } from '@/components/ui/Button'
+import { Status } from '@/components/ui/Status'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Spinner } from '@/components/ui/Spinner'
+import { ConfirmButton } from '@/components/ui/ConfirmButton'
+import { field } from '@/components/ui/fieldStyles'
+import { cn } from '@/lib/utils'
+import { t, useLang } from '@/lib/i18n'
+import { getMe } from '@/lib/auth'
 import { apiFetch } from '@/lib/api'
+import { phaseLabel, phaseTone, useDateFormat } from './phase'
 import type { Session } from '@/types'
 
-function phaseLabel(phase: string): string {
-  const map: Record<string, string> = {
-    lobby: t('facilitator.phase_lobby'),
-    slides: t('facilitator.phase_slides'),
-    template_1: t('facilitator.phase_template_1'),
-    template_2: t('facilitator.phase_template_2'),
-    template_3: t('facilitator.phase_template_3'),
-    template_4: t('facilitator.phase_template_4'),
-    launched: t('facilitator.phase_launched'),
-  }
-  return map[phase] ?? phase
-}
-
-const PHASE_VARIANT: Record<string, 'neutral' | 'brand' | 'fire' | 'success'> = {
-  lobby: 'neutral',
-  slides: 'brand',
-  template_1: 'brand',
-  template_2: 'brand',
-  template_3: 'brand',
-  template_4: 'brand',
-  launched: 'success',
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
 export function FacilitatorDashboard() {
+  useLang()
   const navigate = useNavigate()
+  const dateFmt = useDateFormat()
   const [checking, setChecking] = useState(true)
   const [sessions, setSessions] = useState<Session[]>([])
   const [loadingList, setLoadingList] = useState(false)
   const [search, setSearch] = useState('')
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [showFinished, setShowFinished] = useState(false)
   const [userEmail, setUserEmail] = useState<string>()
 
   useEffect(() => {
@@ -59,29 +40,20 @@ export function FacilitatorDashboard() {
     })
   }, [navigate])
 
-  const stats = useMemo(() => ({
-    total: sessions.length,
-    active: sessions.filter(s => s.phase !== 'lobby' && s.phase !== 'launched').length,
-    launched: sessions.filter(s => s.phase === 'launched').length,
-  }), [sessions])
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return q
+      ? sessions.filter(s => s.title.toLowerCase().includes(q) || s.workshop_tag.toLowerCase().includes(q))
+      : sessions
+  }, [sessions, search])
 
-  const filtered = useMemo(() =>
-    search.trim()
-      ? sessions.filter(s =>
-          s.title.toLowerCase().includes(search.toLowerCase()) ||
-          s.workshop_tag.toLowerCase().includes(search.toLowerCase()),
-        )
-      : sessions,
-    [sessions, search],
-  )
+  const isLive = (s: Session) => s.phase !== 'lobby' && s.phase !== 'launched'
+  const live = filtered.filter(isLive)
+  const upcoming = filtered.filter(s => s.phase === 'lobby')
+  const finished = filtered.filter(s => s.phase === 'launched')
+  const finishedOpen = showFinished || search.trim() !== ''
 
   async function handleDelete(id: string) {
-    if (deletingId !== id) {
-      setDeletingId(id)
-      setTimeout(() => setDeletingId(prev => prev === id ? null : prev), 3000)
-      return
-    }
-    setDeletingId(null)
     try {
       await apiFetch(`/api/v1/sessions/${id}`, { method: 'DELETE' })
       setSessions(prev => prev.filter(s => s.id !== id))
@@ -93,116 +65,155 @@ export function FacilitatorDashboard() {
 
   if (checking) return null
 
+  const newSession = (
+    <Link to="/facilitator/new" className={buttonClasses('primary', 'sm')}>
+      {t('facilitator.new_session_button')}
+    </Link>
+  )
+
   return (
-    <div className="flex min-h-screen flex-col bg-surface-faint">
-      <NavBar
-        showSignOut
-        showFacilitatorNav
-        userEmail={userEmail}
-        right={
-          <Link to="/facilitator/new">
-            <Button variant="brand" size="sm">{t('facilitator.new_session_button')}</Button>
-          </Link>
-        }
-      />
-      <main className="flex-1 px-6 py-8">
+    <div className="flex min-h-screen flex-col bg-paper">
+      <FacilitatorHeader userEmail={userEmail} action={newSession} />
+
+      <main id="main" className="flex-1 px-4 py-10 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-5xl">
-          <div className="mb-6">
-            <h1 className="text-xl font-semibold text-ink">{t('facilitator.dashboard_title')}</h1>
-            <p className="mt-1 text-sm text-ink-muted">{t('facilitator.dashboard_subtitle')}</p>
-          </div>
-
-          {/* Stats row */}
-          {sessions.length > 0 && (
-            <div className="mb-6 grid grid-cols-3 gap-4">
-              {[
-                { label: t('facilitator.stats_total'), value: stats.total },
-                { label: t('facilitator.stats_active'), value: stats.active },
-                { label: t('facilitator.stats_launched'), value: stats.launched },
-              ].map(({ label, value }) => (
-                <div key={label} className="rounded-xl border border-border bg-surface px-5 py-4 shadow-sm">
-                  <p className="text-xs font-medium uppercase tracking-wide text-ink-subtle">{label}</p>
-                  <p className="mt-1 text-2xl font-semibold text-ink">{value}</p>
-                </div>
-              ))}
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <h1 className="font-display text-display text-ink">{t('facilitator.dashboard_title')}</h1>
+              {sessions.length > 0 && (
+                <p className="mt-2 text-sm text-ink-muted tabular-nums">
+                  {t('dashboard.summary', { total: sessions.length, live: sessions.filter(isLive).length })}
+                </p>
+              )}
             </div>
-          )}
-
-          {loadingList ? (
-            <div className="flex items-center justify-center py-24">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600" />
-            </div>
-          ) : sessions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface py-24 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-surface-1">
-                <svg className="h-6 w-6 text-ink-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <rect x="3" y="3" width="18" height="18" rx="3" />
-                  <path d="M3 9h18M9 21V9" />
-                </svg>
-              </div>
-              <h2 className="mt-4 text-base font-medium text-ink">{t('facilitator.no_sessions')}</h2>
-              <p className="mt-1.5 max-w-xs text-sm text-ink-muted">{t('facilitator.no_sessions_hint')}</p>
-              <div className="mt-6">
-                <Link to="/facilitator/new">
-                  <Button variant="brand">{t('facilitator.new_session_button')}</Button>
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Search */}
-              <div className="mb-4">
-                <Input
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder={t('facilitator.search_placeholder')}
-                />
-              </div>
-
-              {/* Session list */}
-              {filtered.length === 0 ? (
-                <p className="py-12 text-center text-sm text-ink-muted">{t('facilitator.no_sessions_match')}</p>
-              ) : (
-                <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-                  {filtered.map(session => (
-                    <div
-                      key={session.id}
-                      className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-surface-1"
-                    >
-                      <Link
-                        to={`/facilitator/session/${session.id}`}
-                        className="flex min-w-0 flex-1 items-center gap-4"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate font-medium text-ink">{session.title}</p>
-                          <p className="mt-0.5 font-mono text-xs text-ink-subtle">{session.workshop_tag}</p>
-                        </div>
-                        <div className="ml-auto flex shrink-0 items-center gap-4 pr-2">
-                          <Badge variant={PHASE_VARIANT[session.phase] ?? 'neutral'}>
-                            {phaseLabel(session.phase)}
-                          </Badge>
-                          <span className="text-xs text-ink-subtle">{formatDate(session.created_at)}</span>
-                        </div>
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(session.id)}
-                        className={[
-                          'shrink-0 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors',
-                          deletingId === session.id
-                            ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                            : 'text-ink-subtle hover:bg-surface-2 hover:text-ink',
-                        ].join(' ')}
-                      >
-                        {deletingId === session.id ? t('facilitator.confirm_remove') : t('facilitator.delete_session')}
-                      </button>
-                    </div>
-                  ))}
+            <div className="flex w-full items-center gap-3 sm:w-auto">
+              {sessions.length > 0 && (
+                <div className="relative flex-1 sm:w-64 sm:flex-none">
+                  <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-ink-subtle" aria-hidden="true" />
+                  <input
+                    type="search"
+                    name="search"
+                    autoComplete="off"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder={t('facilitator.search_placeholder')}
+                    aria-label={t('dashboard.search_label')}
+                    className={cn(field, 'h-9 pl-9')}
+                  />
                 </div>
               )}
-            </>
-          )}
+              <div className="sm:hidden">{newSession}</div>
+            </div>
+          </div>
+
+          <div className="mt-10">
+            {loadingList ? (
+              <div className="flex justify-center py-24"><Spinner /></div>
+            ) : sessions.length === 0 ? (
+              <EmptyState
+                title={t('facilitator.no_sessions')}
+                body={t('facilitator.no_sessions_hint')}
+                action={<Link to="/facilitator/new" className={buttonClasses('primary')}>{t('facilitator.new_session_button')}</Link>}
+              />
+            ) : filtered.length === 0 ? (
+              <p className="py-16 text-center text-sm text-ink-muted">{t('facilitator.no_sessions_match')}</p>
+            ) : (
+              <div className="space-y-12">
+                {live.length > 0 && (
+                  <section aria-labelledby="live-heading">
+                    <h2 id="live-heading" className="mb-4 text-heading font-semibold text-ink">{t('dashboard.live_now')}</h2>
+                    <ul className="space-y-3">
+                      {live.map(s => (
+                        <li key={s.id} className="flex flex-wrap items-center gap-x-6 gap-y-4 rounded-xl border border-line-strong bg-paper-raised p-5 sm:p-6">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-display text-title break-words text-ink">{s.title}</p>
+                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                              <Status tone="live">{t('dashboard.now_at', { phase: phaseLabel(s.phase) })}</Status>
+                              <span className="font-mono text-meta text-ink-subtle" translate="no">{s.workshop_tag}</span>
+                            </div>
+                          </div>
+                          <Link to={`/facilitator/session/${s.id}`} className={buttonClasses('primary')}>
+                            {t('dashboard.resume')}
+                            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
+                {upcoming.length > 0 && (
+                  <section aria-labelledby="upcoming-heading">
+                    <h2 id="upcoming-heading" className="mb-4 text-heading font-semibold text-ink">{t('dashboard.not_started')}</h2>
+                    <SessionRows sessions={upcoming} dateFmt={dateFmt} onDelete={handleDelete} />
+                  </section>
+                )}
+
+                {finished.length > 0 && (
+                  <section aria-labelledby="finished-heading">
+                    <h2 id="finished-heading">
+                      <button
+                        type="button"
+                        onClick={() => setShowFinished(v => !v)}
+                        aria-expanded={finishedOpen}
+                        aria-controls="finished-list"
+                        className="flex items-center gap-2 text-heading font-semibold text-ink transition-colors hover:text-clay-700"
+                      >
+                        {t('dashboard.finished')}
+                        <span className="text-sm font-normal text-ink-subtle tabular-nums">{finished.length}</span>
+                        <ChevronDown
+                          className={cn('h-4 w-4 text-ink-subtle transition-transform duration-200', !finishedOpen && '-rotate-90')}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </h2>
+                    {finishedOpen && (
+                      <div id="finished-list" className="mt-4">
+                        <SessionRows sessions={finished} dateFmt={dateFmt} onDelete={handleDelete} />
+                      </div>
+                    )}
+                  </section>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>
+  )
+}
+
+interface RowsProps {
+  sessions: Session[]
+  dateFmt: Intl.DateTimeFormat
+  onDelete: (id: string) => void
+}
+
+function SessionRows({ sessions, dateFmt, onDelete }: RowsProps) {
+  return (
+    <ul className="divide-y divide-line border-y border-line">
+      {sessions.map(s => (
+        <li key={s.id} className="group flex items-center gap-4 py-1">
+          <Link
+            to={`/facilitator/session/${s.id}`}
+            className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-5 gap-y-1 rounded-md py-3 pr-2"
+          >
+            <span className="min-w-0 truncate text-[1.0625rem] font-medium text-ink transition-colors group-hover:text-clay-700">{s.title}</span>
+            <span className="font-mono text-meta text-ink-subtle" translate="no">{s.workshop_tag}</span>
+            <span className="text-meta text-ink-subtle sm:ml-auto">
+              {t('dashboard.created', { date: dateFmt.format(new Date(s.created_at)) })}
+            </span>
+          </Link>
+          <Status tone={phaseTone(s.phase)} className="hidden w-28 md:inline-flex">{phaseLabel(s.phase)}</Status>
+          <ConfirmButton
+            onConfirm={() => onDelete(s.id)}
+            confirmLabel={t('facilitator.confirm_remove')}
+            aria-label={`${t('facilitator.delete_session')}: ${s.title}`}
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+          </ConfirmButton>
+        </li>
+      ))}
+    </ul>
   )
 }
