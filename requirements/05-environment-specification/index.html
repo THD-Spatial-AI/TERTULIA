@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/logos/favicon.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -461,16 +461,19 @@
 <h2 id="operating-environment">Operating Environment<a class="headerlink" href="#operating-environment" title="Permanent link">&para;</a></h2>
 <h3 id="production">Production<a class="headerlink" href="#production" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Frontend</strong>: Vercel Edge Network (global CDN, static React SPA)</li>
-<li><strong>Backend</strong>: Railway or Render (Python FastAPI, containerized)</li>
-<li><strong>Database</strong>: Supabase cloud (PostgreSQL + Realtime + Auth)</li>
-<li><strong>DNS</strong>: <code>workshop.thd-spatial-ai.de</code> (frontend), <code>workshop-api.thd-spatial-ai.de</code> (backend)</li>
+<li><strong>Everything</strong>: self-hosted via Docker Compose on a single host (see <code>docker-compose.yml</code>)</li>
+<li><strong>Frontend</strong>: nginx-served static React build (<code>frontend</code> service)</li>
+<li><strong>Backend</strong>: FastAPI / Uvicorn (<code>backend</code> service)</li>
+<li><strong>Database</strong>: self-hosted PostgreSQL (<code>postgres</code> service)</li>
+<li><strong>Auth</strong>: Keycloak + Go auth-service (<code>keycloak</code>, <code>auth-service</code> services)</li>
+<li><strong>DNS</strong>: <code>workshop.thd-spatial-ai.de</code>, fronted by a reverse proxy (nginx) for TLS</li>
 </ul>
 <h3 id="development">Development<a class="headerlink" href="#development" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Frontend</strong>: Vite dev server on <code>http://localhost:5173</code></li>
 <li><strong>Backend</strong>: Uvicorn with <code>--reload</code> on <code>http://localhost:8001</code></li>
-<li><strong>Database</strong>: Supabase cloud (shared dev project) or Supabase CLI local on <code>http://localhost:54321</code></li>
+<li><strong>Database</strong>: PostgreSQL container via <code>docker compose up postgres</code> (or <code>make up</code> for the full stack)</li>
+<li><strong>Auth</strong>: Keycloak + auth-service containers (<code>make up</code>)</li>
 </ul>
 <h3 id="workshop-day-in-person">Workshop Day (In-Person)<a class="headerlink" href="#workshop-day-in-person" title="Permanent link">&para;</a></h3>
 <ul>
@@ -498,16 +501,22 @@
 </thead>
 <tbody>
 <tr>
-<td>Supabase</td>
-<td>Cloud (managed)</td>
-<td>REST + WebSocket</td>
-<td>DB, Realtime, Auth</td>
+<td>PostgreSQL 16</td>
+<td>self-hosted (Docker)</td>
+<td>asyncpg</td>
+<td>Session / participant / template storage</td>
 </tr>
 <tr>
-<td>feeedback_pipeline</td>
-<td>Latest (no versioning yet)</td>
+<td>Keycloak + auth-service</td>
+<td>self-hosted (Docker)</td>
+<td>OIDC / HTTP</td>
+<td>Facilitator authentication</td>
+</tr>
+<tr>
+<td>feedback pipeline</td>
+<td>part of this repo (<code>pipeline/</code>)</td>
 <td>HTTP REST</td>
-<td>Persona pre-registration</td>
+<td>Persona pre-registration + feedback issues</td>
 </tr>
 <tr>
 <td>Storcito-Wildfire</td>
@@ -520,18 +529,6 @@
 <td>N/A (external service)</td>
 <td>iframe embed</td>
 <td>Slide content hosting</td>
-</tr>
-<tr>
-<td>Vercel</td>
-<td>N/A (managed)</td>
-<td>CI/CD + CDN</td>
-<td>Frontend hosting</td>
-</tr>
-<tr>
-<td>Railway / Render</td>
-<td>N/A (managed)</td>
-<td>Container</td>
-<td>Backend hosting</td>
 </tr>
 </tbody>
 </table>
@@ -578,10 +575,6 @@
 <tr>
 <td><code>react</code> 19</td>
 <td>UI framework</td>
-</tr>
-<tr>
-<td><code>@supabase/supabase-js</code></td>
-<td>Supabase client (DB + Realtime + Auth)</td>
 </tr>
 <tr>
 <td><code>react-router-dom</code> v7</td>
@@ -645,24 +638,24 @@
 <td>ASGI server</td>
 </tr>
 <tr>
-<td><code>pydantic</code> v2</td>
-<td>Request/response validation</td>
+<td><code>pydantic</code> v2 / <code>pydantic-settings</code></td>
+<td>Request/response validation + config</td>
 </tr>
 <tr>
-<td><code>supabase</code></td>
-<td>Supabase Python admin client</td>
+<td><code>asyncpg</code></td>
+<td>PostgreSQL async driver</td>
 </tr>
 <tr>
 <td><code>httpx</code></td>
-<td>Async HTTP calls to feeedback_pipeline</td>
+<td>Async HTTP calls to the auth-service + feedback pipeline</td>
 </tr>
 <tr>
 <td><code>python-dotenv</code></td>
 <td>Environment variable loading</td>
 </tr>
 <tr>
-<td><code>python-jose[cryptography]</code></td>
-<td>JWT validation for facilitator auth</td>
+<td><code>qrcode</code> / <code>pillow</code></td>
+<td>Server-side QR code generation for session URLs</td>
 </tr>
 </tbody>
 </table>
@@ -688,7 +681,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:28:22 UTC">July 12, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="September 23, 2026 09:00:59 UTC">September 23, 2026</span>
   </span>
 
     
@@ -698,7 +691,7 @@
     <span class="md-icon" title="Created">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:28:22 UTC">July 12, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:17:19 UTC">July 12, 2026</span>
   </span>
 
     
@@ -763,7 +756,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.expand", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.prune", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.path", "navigation.tracking", "navigation.sections", "search.highlight", "search.share", "search.suggest", "toc.follow", "toc.integrate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

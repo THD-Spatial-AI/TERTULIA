@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/logos/favicon.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -462,7 +462,7 @@
 <p><strong>Workshop Session</strong>
 A bounded facilitated event where a group of stakeholders (participants) collaborate on structured templates under the guidance of a facilitator. Corresponds to one record in the <code>sessions</code> table.</p>
 <p><strong>Facilitator</strong>
-The THD Spatial AI team member who creates and controls a workshop session. Has an authenticated account (Supabase magic link). Controls phase transitions, template unlocking, and the Wildfire launch.</p>
+The THD Spatial AI team member who creates and controls a workshop session. Has an authenticated account (Keycloak, via the Go auth-service). Controls phase transitions, template unlocking, and the Wildfire launch.</p>
 <p><strong>Participant</strong>
 A domain expert (firefighter, mayor, scientist, academic) who joins a workshop session anonymously (name + role + org only). Fills in collaborative templates.</p>
 <p><strong>workshop_tag</strong>
@@ -480,22 +480,22 @@ Template 3. A sticky-note grid where a participant captures the real-world probl
 <p><strong>Stakeholder Map</strong>
 Template 4. A freeform node-edge graph where a participant maps the people and organizations they coordinate with during a wildfire event.</p>
 <p><strong>Push Redirect</strong>
-The mechanism by which the facilitator simultaneously navigates all connected participants to the Wildfire application URL. Implemented via Supabase Realtime broadcast on <code>session:{id}:control</code>.</p>
+The mechanism by which the facilitator simultaneously navigates all connected participants to the Wildfire application URL. Implemented via a WebSocket broadcast on <code>session:{slug}:control</code>.</p>
 <p><strong>Pre-registration</strong>
 The act of sending a participant's persona data to feeedback_pipeline before the Wildfire redirect, so the <code>PersonaForm</code> in Wildfire's <code>FeedbackOverlay</code> is skipped.</p>
 <h2 id="technical-terms">Technical Terms<a class="headerlink" href="#technical-terms" title="Permanent link">&para;</a></h2>
-<p><strong>Supabase Realtime</strong>
-Supabase's WebSocket-based broadcast system. Used for syncing phase changes, slide index, participant presence, and reactions across all connected browsers.</p>
-<p><strong>feeedback_pipeline</strong>
-The companion project at <code>C:\Users\user\Desktop\STORCITO\feeedback_pipeline</code>. Captures in-app feedback from Wildfire, processes it with local AI (Ollama), and creates GitHub issues. Receives pre-registered personas from the workshop platform.</p>
+<p><strong>WebSocket Hub</strong>
+The backend's in-process WebSocket broadcast system (<code>backend/routes/ws.py</code>). Used for syncing phase changes, slide index, participant presence, and reactions across all connected browsers.</p>
+<p><strong>feedback pipeline</strong>
+The feedback half of Tertulia, now part of this repo at <code>pipeline/</code>. Captures in-app feedback from the target app, processes it with local AI (Ollama via n8n), and creates GitHub issues. Receives pre-registered personas from the workshop platform.</p>
 <p><strong>FeedbackOverlay</strong>
-The React component from feeedback_pipeline (<code>frontend_overlay/src/FeedbackOverlay.tsx</code>) that wraps the Wildfire app root and provides the floating action button for in-app feedback.</p>
+The React component from the feedback pipeline (<code>pipeline/overlay/src/FeedbackOverlay.tsx</code>) that wraps the target app root and provides the floating action button for in-app feedback.</p>
 <p><strong>session_token (pipeline)</strong>
-Same concept as <code>session_token</code> in the workshop platform. When passed to Wildfire as a URL query param (<code>?session_token=...</code>), the FeedbackOverlay uses it to look up the pre-registered persona and skip the PersonaForm.</p>
-<p><strong>Magic Link</strong>
-Supabase Auth's passwordless email authentication. Facilitator enters email → receives a one-click login link → authenticated session established.</p>
-<p><strong>RLS (Row Level Security)</strong>
-Supabase's PostgreSQL-level access control. Ensures participants can only read/write their own template rows, and facilitators can only control their own sessions.</p>
+Same concept as <code>session_token</code> in the workshop platform. When passed to the target app as a URL query param (<code>?tertulia_token=...</code> — see <code>redirectToWildfire</code> in <code>frontend/src/lib/utils.ts</code>), the FeedbackOverlay sends it with feedback so the backend attaches the pre-registered persona and the participant skips the PersonaForm.</p>
+<p><strong>Keycloak</strong>
+The self-hosted OpenID Connect identity provider. Facilitators authenticate through it via the Go auth-service, which establishes the session used for facilitator API calls.</p>
+<p><strong>Access Control</strong>
+Enforced in the FastAPI backend (not the database). Participants can only read/write their own template rows (via <code>session_token</code>); facilitators can only control sessions they created (via <code>facilitator_id</code>).</p>
 <p><strong>Arc42</strong>
 The software architecture documentation template used by THD Spatial AI projects. This documentation follows the standard 12-section Arc42 structure.</p>
 
@@ -520,7 +520,7 @@ The software architecture documentation template used by THD Spatial AI projects
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:28:22 UTC">July 12, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="September 23, 2026 09:00:59 UTC">September 23, 2026</span>
   </span>
 
     
@@ -530,7 +530,7 @@ The software architecture documentation template used by THD Spatial AI projects
     <span class="md-icon" title="Created">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:28:22 UTC">July 12, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:17:19 UTC">July 12, 2026</span>
   </span>
 
     
@@ -595,7 +595,7 @@ The software architecture documentation template used by THD Spatial AI projects
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.expand", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.prune", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.path", "navigation.tracking", "navigation.sections", "search.highlight", "search.share", "search.suggest", "toc.follow", "toc.integrate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

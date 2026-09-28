@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/logos/favicon.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -459,18 +459,18 @@
 
 <h1 id="solution-strategy">Solution Strategy<a class="headerlink" href="#solution-strategy" title="Permanent link">&para;</a></h1>
 <h2 id="core-approach">Core Approach<a class="headerlink" href="#core-approach" title="Permanent link">&para;</a></h2>
-<p>The platform is built as a <strong>thin orchestration layer</strong> over managed services. Rather than implementing real-time infrastructure from scratch, it delegates:</p>
+<p>The platform is a <strong>self-hosted, fully open-source stack</strong>. It runs its own real-time, auth, and persistence rather than depending on a managed cloud:</p>
 <ul>
-<li><strong>Real-time sync</strong> → Supabase Realtime (broadcast channels over WebSocket)</li>
-<li><strong>Auth</strong> → Supabase Auth (magic link for facilitators)</li>
-<li><strong>Data persistence</strong> → Supabase PostgreSQL</li>
-<li><strong>Deployment</strong> → Vercel (frontend) + Supabase cloud (DB + backend hosting)</li>
+<li><strong>Real-time sync</strong> → in-process WebSocket hub in the FastAPI backend (<code>backend/routes/ws.py</code>)</li>
+<li><strong>Auth</strong> → Keycloak (OpenID Connect), brokered by the Go auth-service</li>
+<li><strong>Data persistence</strong> → self-hosted PostgreSQL (<code>backend/db.py</code>, schema <code>backend/db/schema.sql</code>)</li>
+<li><strong>Deployment</strong> → Docker Compose (frontend, backend, PostgreSQL, Keycloak, auth-service)</li>
 </ul>
-<p>This minimizes operational burden and allows the small THD Spatial AI team to focus on product logic rather than infrastructure.</p>
+<p>This keeps all participant data on-premise and lets the small THD Spatial AI team run everything with a single <code>docker compose up</code>.</p>
 <h2 id="key-architectural-decisions">Key Architectural Decisions<a class="headerlink" href="#key-architectural-decisions" title="Permanent link">&para;</a></h2>
-<h3 id="1-supabase-realtime-over-custom-websocket-server">1. Supabase Realtime over Custom WebSocket Server<a class="headerlink" href="#1-supabase-realtime-over-custom-websocket-server" title="Permanent link">&para;</a></h3>
-<p>Workshop sessions involve tens of participants (not thousands). Supabase Realtime provides broadcast channels sufficient for this scale, eliminates the need to run a stateful WebSocket server, and integrates natively with the PostgreSQL database already used for persistence.</p>
-<p><strong>Trade-off</strong>: Supabase Realtime has latency slightly higher than a dedicated WebSocket server (~100-300ms) but well within the &lt; 500ms requirement for workshop interactions.</p>
+<h3 id="1-in-process-websocket-hub">1. In-Process WebSocket Hub<a class="headerlink" href="#1-in-process-websocket-hub" title="Permanent link">&para;</a></h3>
+<p>Workshop sessions involve tens of participants (not thousands), so real-time sync is handled by a lightweight in-process WebSocket hub inside the FastAPI backend — no separate messaging service to operate. Broadcast channels are keyed by session slug.</p>
+<p><strong>Trade-off</strong>: A single-process hub does not scale horizontally across backend replicas without a shared pub/sub (e.g. Redis). Acceptable at workshop scale, where one backend instance comfortably serves a session.</p>
 <h3 id="2-fastapi-python-backend">2. FastAPI (Python) Backend<a class="headerlink" href="#2-fastapi-python-backend" title="Permanent link">&para;</a></h3>
 <p>The backend handles session management, participant registration, and the critical pre-registration call to feeedback_pipeline. Python is chosen because:
 - feeedback_pipeline is already Python/FastAPI
@@ -481,26 +481,26 @@
 <p>Each workshop feature (persona-card, user-flow, problem-board, etc.) is a self-contained folder with its own component, hook, types, and translations. This mirrors the Storcito-Wildfire <code>features/</code> structure.</p>
 <p><strong>Trade-off</strong>: Some duplication of utility logic. Resolved by placing shared primitives in <code>components/</code> and <code>lib/</code>.</p>
 <h3 id="4-anonymous-participants">4. Anonymous Participants<a class="headerlink" href="#4-anonymous-participants" title="Permanent link">&para;</a></h3>
-<p>Participants provide name, role, and org — stored with a server-generated <code>session_token</code>. No email, no password, no Supabase user account. This removes all friction for domain experts unfamiliar with digital tools.</p>
+<p>Participants provide name, role, and org — stored with a server-generated <code>session_token</code>. No email, no password, no user account. This removes all friction for domain experts unfamiliar with digital tools.</p>
 <p><strong>Trade-off</strong>: No persistent identity across sessions. A returning participant is treated as new. Acceptable for workshop use case where sessions are bounded events.</p>
 <h3 id="5-external-slides-iframe-for-phase-1">5. External Slides (Iframe) for Phase 1<a class="headerlink" href="#5-external-slides-iframe-for-phase-1" title="Permanent link">&para;</a></h3>
-<p>Facilitators embed Google Slides or PDF URLs. The platform syncs the current slide index across all participants via Supabase Realtime. The platform does not host or author slide content.</p>
+<p>Facilitators embed Google Slides or PDF URLs. The platform syncs the current slide index across all participants via the WebSocket hub. The platform does not host or author slide content.</p>
 <p><strong>Trade-off</strong>: Depends on external service (Google Slides). Mitigated by supporting any iframe-embeddable URL. Slide authoring is a planned future milestone.</p>
 <h2 id="technology-stack-summary">Technology Stack Summary<a class="headerlink" href="#technology-stack-summary" title="Permanent link">&para;</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Browser (Participant / Facilitator)
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>        │
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        ▼
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Vercel CDN → React 19 SPA (TypeScript + Vite + TailwindCSS v4)
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>React 19 SPA (TypeScript + Vite + TailwindCSS v4)
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        │
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        ├── Supabase JS Client ──► Supabase Cloud
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        │      ├── PostgreSQL (sessions, participants, templates)
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        │      ├── Realtime (phase sync, slide index, reactions)
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        │      └── Auth (facilitator magic link)
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        │
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        └── HTTP → FastAPI Backend (Python 3.11)
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>                │
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>                ├── Supabase Python Client ──► Supabase Cloud
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                └── httpx ──► feeedback_pipeline /api/v1/persona/pre-register
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        ├── WebSocket ──► FastAPI hub (phase sync, slide index, reactions)
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        │
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        └── HTTP → FastAPI Backend (Python 3.11)
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>                │
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                ├── asyncpg ──► PostgreSQL (sessions, participants, templates)
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                ├── auth-service ──► Keycloak (facilitator auth)
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>                └── httpx ──► feedback pipeline /api/v1/persona/pre-register
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>All services run together via Docker Compose (fully self-hosted).
 </span></code></pre></div>
 
 
@@ -524,7 +524,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:28:22 UTC">July 12, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="September 23, 2026 09:00:59 UTC">September 23, 2026</span>
   </span>
 
     
@@ -534,7 +534,7 @@
     <span class="md-icon" title="Created">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:28:22 UTC">July 12, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:17:19 UTC">July 12, 2026</span>
   </span>
 
     
@@ -599,7 +599,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.expand", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.prune", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.path", "navigation.tracking", "navigation.sections", "search.highlight", "search.share", "search.suggest", "toc.follow", "toc.integrate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

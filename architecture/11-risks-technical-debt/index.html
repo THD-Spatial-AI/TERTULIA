@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/logos/favicon.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -475,12 +475,12 @@
 - Facilitator sees a warning banner: "Persona pre-registration failed — participants will fill in their profile in Wildfire"
 - Document the feeedback_pipeline health check command for workshop day setup</p>
 <hr />
-<h3 id="r-03-supabase-realtime-latency-spike">R-03 — Supabase Realtime Latency Spike<a class="headerlink" href="#r-03-supabase-realtime-latency-spike" title="Permanent link">&para;</a></h3>
+<h3 id="r-03-websocket-broadcast-latency-spike">R-03 — WebSocket Broadcast Latency Spike<a class="headerlink" href="#r-03-websocket-broadcast-latency-spike" title="Permanent link">&para;</a></h3>
 <p><strong>Probability</strong>: Low | <strong>Impact</strong>: Medium</p>
-<p>Under high participant load or poor network conditions, Supabase Realtime broadcast latency may exceed the 500ms target, causing slide sync to feel sluggish.</p>
+<p>Under high participant load or poor network conditions, WebSocket broadcast latency may exceed the 500ms target, causing slide sync to feel sluggish.</p>
 <p><strong>Mitigation</strong>:
-- Supabase Realtime is designed for thousands of concurrent connections — 50 participants is well within limits
-- Monitor with Supabase dashboard during workshop
+- The in-process WebSocket hub comfortably handles the tens of concurrent connections a workshop needs
+- Monitor backend WebSocket connection count and logs during the workshop
 - If persistent issue: implement optimistic local state (facilitator's slide advances instantly on their screen; broadcast is eventual)</p>
 <hr />
 <h3 id="r-04-anonymous-session-token-loss">R-04 — Anonymous Session Token Loss<a class="headerlink" href="#r-04-anonymous-session-token-loss" title="Permanent link">&para;</a></h3>
@@ -488,16 +488,16 @@
 <p>If a participant clears their browser storage or switches devices mid-workshop, their <code>session_token</code> is lost. They cannot reconnect to their in-progress template.</p>
 <p><strong>Mitigation</strong>:
 - Display a "You're starting fresh" message if token not found — participant re-joins with same name
-- All previously submitted template data remains in Supabase (linked to old participant record)
+- All previously submitted template data remains in the database (linked to old participant record)
 - Facilitator can see both records in the completion view</p>
 <hr />
 <h3 id="r-05-persona-schema-drift-between-workshop-and-pipeline">R-05 — Persona Schema Drift Between Workshop and Pipeline<a class="headerlink" href="#r-05-persona-schema-drift-between-workshop-and-pipeline" title="Permanent link">&para;</a></h3>
 <p><strong>Probability</strong>: Medium | <strong>Impact</strong>: Medium</p>
-<p>The workshop's <code>PersonaCard</code> schema and feeedback_pipeline's <code>PersonaData</code> Pydantic model may evolve independently, causing the pre-registration call to fail or lose fields.</p>
+<p>The workshop's <code>PersonaCard</code> schema (<code>backend/models.py</code>) and the pipeline's <code>PersonaData</code> / <code>PreRegisteredPersona</code> models (<code>pipeline/backend/models.py</code>) may evolve independently, causing the pre-registration call to fail or lose fields. (Reduced now that both live in one repo and share an explicit mapping.)</p>
 <p><strong>Mitigation</strong>:
 - Document the field mapping in <code>backend/pipeline_integration.py</code> with explicit comments
 - Add a smoke test: pre-registration endpoint called with sample data as part of workshop setup checklist
-- Pin feeedback_pipeline API version in the integration (include API version header)</p>
+- Keep the two models and their mapping in sync when either changes — both are in this repo</p>
 <hr />
 <h2 id="technical-debt">Technical Debt<a class="headerlink" href="#technical-debt" title="Permanent link">&para;</a></h2>
 <h3 id="td-01-no-end-to-end-tests-at-launch">TD-01 — No End-to-End Tests at Launch<a class="headerlink" href="#td-01-no-end-to-end-tests-at-launch" title="Permanent link">&para;</a></h3>
@@ -507,7 +507,7 @@
 <p>The current slide sync broadcasts only an integer index. If the facilitator's iframe and participant's iframe render the same URL differently (e.g., due to Google account state), slide numbers may be off by one.</p>
 <p><strong>Plan</strong>: Investigate per-slide URL params (Google Slides supports <code>#slide=id.xxx</code>) as a more robust alternative.</p>
 <h3 id="td-03-no-facilitator-session-recovery">TD-03 — No Facilitator Session Recovery<a class="headerlink" href="#td-03-no-facilitator-session-recovery" title="Permanent link">&para;</a></h3>
-<p>If the facilitator's browser crashes mid-session, they can reload and see the session state in Supabase — but their Realtime channel subscription is lost and participants are stuck on the last phase. There is no "reclaim control" flow.</p>
+<p>If the facilitator's browser crashes mid-session, they can reload and see the session state from the database — but their WebSocket subscription is lost and participants are stuck on the last phase. There is no "reclaim control" flow.</p>
 <p><strong>Plan</strong>: Add facilitator reconnect flow in v1.1 — detect facilitator absence and show "Waiting for facilitator to reconnect" to participants.</p>
 <h3 id="td-04-problem-board-has-no-conflict-resolution">TD-04 — Problem Board Has No Conflict Resolution<a class="headerlink" href="#td-04-problem-board-has-no-conflict-resolution" title="Permanent link">&para;</a></h3>
 <p>If two participants edit the same sticky note simultaneously (unlikely since each participant has their own board, but possible in future shared-board scenario), the last write wins.</p>
@@ -534,7 +534,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:28:22 UTC">July 12, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="September 23, 2026 14:34:45 UTC">September 23, 2026</span>
   </span>
 
     
@@ -544,7 +544,7 @@
     <span class="md-icon" title="Created">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:28:22 UTC">July 12, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:17:19 UTC">July 12, 2026</span>
   </span>
 
     
@@ -609,7 +609,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.expand", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.prune", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.path", "navigation.tracking", "navigation.sections", "search.highlight", "search.share", "search.suggest", "toc.follow", "toc.integrate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

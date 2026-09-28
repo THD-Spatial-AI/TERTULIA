@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/logos/favicon.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -458,18 +458,18 @@
 
 
 <h1 id="architectural-decisions">Architectural Decisions<a class="headerlink" href="#architectural-decisions" title="Permanent link">&para;</a></h1>
-<h2 id="adr-001-supabase-realtime-over-custom-websocket-server">ADR-001 — Supabase Realtime over Custom WebSocket Server<a class="headerlink" href="#adr-001-supabase-realtime-over-custom-websocket-server" title="Permanent link">&para;</a></h2>
-<p><strong>Status</strong>: Accepted</p>
-<p><strong>Context</strong>: The platform needs real-time sync for slide index, phase changes, and reactions across all connected participants. Options considered: custom WebSocket server (Go or Python), Socket.IO, Supabase Realtime.</p>
-<p><strong>Decision</strong>: Use Supabase Realtime broadcast channels.</p>
+<h2 id="adr-001-in-process-websocket-hub-for-real-time-sync">ADR-001 — In-Process WebSocket Hub for Real-Time Sync<a class="headerlink" href="#adr-001-in-process-websocket-hub-for-real-time-sync" title="Permanent link">&para;</a></h2>
+<p><strong>Status</strong>: Accepted (supersedes an earlier managed-realtime approach)</p>
+<p><strong>Context</strong>: The platform needs real-time sync for slide index, phase changes, and reactions across all connected participants. Options considered: an in-process WebSocket hub in the FastAPI backend, a standalone WebSocket server (Go or Python), Socket.IO, and a managed realtime SaaS.</p>
+<p><strong>Decision</strong>: Use an in-process WebSocket hub inside the FastAPI backend (<code>backend/routes/ws.py</code>), with broadcast channels keyed by session slug.</p>
 <p><strong>Rationale</strong>:
-- Workshop sessions involve tens of participants, not thousands — Supabase handles this scale easily
-- Eliminates the need to run a stateful WebSocket server (reduces ops burden)
-- Integrates natively with Supabase PostgreSQL already used for persistence
-- Supabase JS client handles reconnection logic automatically</p>
+- Workshop sessions involve tens of participants, not thousands — a single-process hub handles this easily
+- Keeps the whole stack fully self-hosted (no third-party cloud, participant data stays on-premise)
+- No extra messaging service to run or pay for
+- Lives next to the data and auth already in the backend</p>
 <p><strong>Consequences</strong>:
-- Slight latency overhead (~100-300ms) vs. dedicated WebSocket — acceptable for workshop interactions
-- Dependency on Supabase availability (mitigated by Supabase SLA and auto-reconnect)</p>
+- Single-process — no horizontal scaling across backend replicas without a shared pub/sub (e.g. Redis); acceptable at workshop scale
+- The frontend handles reconnection (show "Reconnecting…", auto-retry)</p>
 <hr />
 <h2 id="adr-002-fastapi-python-over-go-for-backend">ADR-002 — FastAPI (Python) over Go for Backend<a class="headerlink" href="#adr-002-fastapi-python-over-go-for-backend" title="Permanent link">&para;</a></h2>
 <p><strong>Status</strong>: Accepted</p>
@@ -497,11 +497,11 @@
 <hr />
 <h2 id="adr-004-persona-card-built-fresh-not-imported-from-feeedback_pipeline">ADR-004 — Persona Card Built Fresh (Not Imported from feeedback_pipeline)<a class="headerlink" href="#adr-004-persona-card-built-fresh-not-imported-from-feeedback_pipeline" title="Permanent link">&para;</a></h2>
 <p><strong>Status</strong>: Accepted</p>
-<p><strong>Context</strong>: feeedback_pipeline has a <code>PersonaForm</code> component with name, role, org, familiarity, experience, comfort. Re-using it would create a cross-repo dependency.</p>
+<p><strong>Context</strong>: The feedback pipeline has a <code>PersonaForm</code> component with name, role, org, familiarity, experience, comfort. Re-using it would couple the workshop UI to the overlay package (<code>pipeline/overlay</code>).</p>
 <p><strong>Decision</strong>: Workshop platform builds its own Persona Card component and schema.</p>
 <p><strong>Rationale</strong>:
 - Workshop persona is richer (goals, pain points, stakeholder context) than the feeedback_pipeline persona (which is UI-feedback focused)
-- Coupling to feeedback_pipeline's frontend package creates maintenance risk
+- Coupling to the overlay package (<code>pipeline/overlay</code>) creates maintenance risk
 - The workshop platform owns the canonical persona — it pre-registers to the pipeline, not the other way around</p>
 <p><strong>Consequences</strong>:
 - Some field duplication between <code>PersonaCard</code> (workshop) and <code>PersonaData</code> (pipeline)
@@ -520,17 +520,18 @@
 - No offline slide fallback
 - Slide authoring is deferred to v2 milestone</p>
 <hr />
-<h2 id="adr-006-vercel-supabase-cloud-no-self-hosting">ADR-006 — Vercel + Supabase Cloud (No Self-Hosting)<a class="headerlink" href="#adr-006-vercel-supabase-cloud-no-self-hosting" title="Permanent link">&para;</a></h2>
-<p><strong>Status</strong>: Accepted</p>
-<p><strong>Context</strong>: The platform must be reachable for online workshops without requiring participants to install anything. Hosting options: THD/university server (Docker), cloud PaaS (Vercel + Railway), Supabase cloud.</p>
-<p><strong>Decision</strong>: Vercel for frontend, Supabase cloud for DB/Realtime/Auth, Railway or Render for FastAPI backend.</p>
+<h2 id="adr-006-self-hosted-docker-compose-no-managed-cloud">ADR-006 — Self-Hosted Docker Compose (No Managed Cloud)<a class="headerlink" href="#adr-006-self-hosted-docker-compose-no-managed-cloud" title="Permanent link">&para;</a></h2>
+<p><strong>Status</strong>: Accepted (supersedes an earlier managed-cloud approach)</p>
+<p><strong>Context</strong>: The platform must be reachable for online workshops without requiring participants to install anything, while keeping participant data on-premise and the stack fully open-source. Hosting options: a THD/university server running Docker, or cloud PaaS + managed backend services.</p>
+<p><strong>Decision</strong>: Self-host the entire stack via Docker Compose (frontend, FastAPI backend, PostgreSQL, Keycloak, Go auth-service, and the feedback pipeline) on a single host.</p>
 <p><strong>Rationale</strong>:
-- Zero infrastructure maintenance
-- Vercel + Supabase pair natively (Vercel has first-class Supabase integration)
-- Immediate global CDN for frontend assets — fast load for remote participants worldwide</p>
+- All participant data stays on THD infrastructure — no third-party data processor
+- Fully open-source; no per-seat or usage-based SaaS cost
+- One <code>docker compose up</code> brings up the whole system, reproducibly, anywhere
+- Aligns with the feedback pipeline, which already runs local Ollama + n8n</p>
 <p><strong>Consequences</strong>:
-- Data stored in Supabase cloud (not on THD servers) — mitigated by anonymous-only participant data and the ability to self-host Supabase in future
-- Monthly cost (Supabase Pro ~$25/mo if free tier exceeded)</p>
+- The team operates its own host (updates, backups, TLS) instead of offloading to a PaaS
+- No built-in global CDN; fine for regional/EU workshops. A reverse proxy (nginx) fronts the services for TLS</p>
 
 
 
@@ -553,7 +554,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:28:22 UTC">July 12, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="September 23, 2026 14:34:45 UTC">September 23, 2026</span>
   </span>
 
     
@@ -563,7 +564,7 @@
     <span class="md-icon" title="Created">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:28:22 UTC">July 12, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 12, 2026 12:17:19 UTC">July 12, 2026</span>
   </span>
 
     
@@ -628,7 +629,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.expand", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.prune", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.path", "navigation.tracking", "navigation.sections", "search.highlight", "search.share", "search.suggest", "toc.follow", "toc.integrate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
